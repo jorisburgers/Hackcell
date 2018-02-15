@@ -6,7 +6,7 @@
 	\vskip 0.5cm
 	\large{A spreadsheet library in Haskell}
 }
-\author{Joris Burger, Lars van den Haak \& Ivo Gabe de Wolf}
+\author{Joris Burgers - 5545358\\ Lars van den Haak - 3867803\\ Ivo Gabe de Wolff - 4279433}
 \begin{document}
 	\maketitle
 	\section{Domain Introduction}
@@ -15,6 +15,14 @@
 	A common spreadsheet application is Excel, where the cells are stored in a two dimensional sheet and a file can contain multiple sheets. Cells can refer to other cells in the same or other sheets. Therefor Excel is three dimensional. Most of the calculations are made on numbers or text. 
 	
 	\section{Problem Description}
+	The problem that Hackcell will solve is the calculation of spreadsheets. This means that, given a spreadsheet with combined values and expressions, Hackcell will provide a spreadsheet where all expressions are replaced with their appropriate value. This spreadsheet can be of arbitrary size and dimensions. There is a number of problems that Hackcell will solve.
+\begin{itemize}
+	\item The ability to allow arbitrary data types in the same spreadsheet. Users can use their own types and are not limited to a number of predefined types. 
+	\item Remove the limitation of the number of dimensions. Most spreadsheet programs give the user a limited amount of dimensions to work with. We want to remove this restriction and let a user define a spreadsheet of arbitrary size and dimensions.
+	\item Detection of cyclic references. In a spreadsheet, cells can reference other cells and this can cause a cycle. This cycle will be detected, preventing an endless loop.
+	\item The possibility to allow users to update specific cells without the need to recompute the entire spreadsheet. The only cells that will be updated are those cells that depend on the changed cell.
+	\item The only values that are computed are the values that need to be computed. This can be done using the laziness that is already present in Haskell. 
+\end{itemize}	
 	
 	\subsection{Proposed solution}
 	We propose to create a library with a generic core and an extension, that will replicate the behavior of Excel. We try to make the core generic, such that arbitrary types can be used for both the keys and values in the spreadsheet. The core will provide an interface to create a spreadsheet and update cells of an existing spreadsheet. It can compute the values of cells in the spreadsheet.
