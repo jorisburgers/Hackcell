@@ -1,7 +1,8 @@
 \documentclass{article}
 \usepackage[utf8]{inputenc}
+\usepackage[cm]{fullpage}
+\usepackage{float}
 \title{
-	\vskip -3cm
 	Project Proposal: Hackcell \\
 	\vskip 0.5cm
 	\large{A spreadsheet library in Haskell}
@@ -34,4 +35,18 @@
 	We will use the core to build an extension that replicates the functionality of Excel. This will have the type of the key and the values fixed. Note that cells can still have different types, but they are all mapped to a unitype like \texttt{data Prim = PInt Int | PBool Bool | PDouble Double}. Depending on time, we can add some more complex functions and maybe add some SQL-like query functions.
 	
 	\section{Schedule}
+		\begin{tabular}{|r|l|l|} \hline
+			Week & Deadline &Tasks \footnotemark  \\ \hline \hline
+			19 February & Submission of project proposal & Setting up initial framework\\ \hline
+			26 February &  & Processing feedback on proposal and continuing on framework\\ \hline
+			5 March & & Finalizing bare minimum framework without \\
+			 & & dependency tracking \\ \hline
+			12 March & Submission status report & Implementing dependency tracking and \\
+			 & & building programming interface\\ \hline
+			19 March & & Adding advanced functionality for users\\ \hline
+			26 March & & Implementing examples and reserve time for solving issues\\ \hline
+			2 April & Presentation \& Submission of project & Finalizing project, preparing presentation\\ \hline
+			
+		\end{tabular}
+	\footnotetext{For each task in the schedule, it is only marked as complete when automated tests and documentation are provided}
 \end{document}
