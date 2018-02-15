@@ -21,9 +21,14 @@
 	\item The only values that are computed are the values that need to be computed. This can be done using the laziness that is already present in Haskell. 
 \end{itemize}	
 	
-		
-	\subsection*{Proposed solution}
+	\subsection{Proposed solution}
+	We propose to create a library with a generic core and an extension, that will replicate the behavior of Excel. We try to make the core generic, such that arbitrary types can be used for both the keys and values in the spreadsheet. The core will provide an interface to create a spreadsheet and update cells of an existing spreadsheet. It can compute the values of cells in the spreadsheet.
 	
-		
+	The core provides an interface (DSL), probably monadic, to write functions like \texttt{SUM} and \texttt{AVERAGE} in Excel. This interface will be able to get the value of referenced cells and mark them as dependencies. It will also have a function to denote that the computation of a cell failed, for instance because of a division by zero.
+	
+	This abstraction makes it easy to construct a dependency graph. We use this graph to recalculate only a minimal number of cells when one cell changes.
+	
+	We will use the core to build an extension that replicates the functionality of Excel. This will have the type of the key and the values fixed. Note that cells can still have different types, but they are all mapped to a unitype like \texttt{data Prim = PInt Int | PBool Bool | PDouble Double}. Depending on time, we can add some more complex functions and maybe add some SQL-like query functions.
+	
 	\section{Schedule}
 \end{document}
