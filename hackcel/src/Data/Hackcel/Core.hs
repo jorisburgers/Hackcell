@@ -36,49 +36,12 @@ data EvalState field value error = EvalState
   , esStack :: [field]
   }
 
-newtype Eval field value error a = Eval
-  { runEvalState :: EvalState field value error -> (Either error a, EvalState field value error) }
-
-type Eval2 field value error a = E.ExceptT error (S.State (EvalState field value error)) a
-
-newtype Eval3 field value error a = Eval3 {
-  runEval3 :: E.ExceptT error (S.State (EvalState field value error)) a
+newtype Eval field value error a = Eval {
+  runEval :: E.ExceptT error (S.State (EvalState field value error)) a
 } deriving (Monad, Functor, Applicative)
 
-instance Monad (Eval field value error) where
-  return a = Eval (\s -> (Right a, s))
-  Eval x >>= f = Eval g
-    where
-      g t = case x t of
-        (Left err, s) -> (Left err, s)
-        (Right y,  s) -> runEvalState (f y) s
-
-
-
-instance Applicative (Eval field value error) where
-  pure = return
-  (<*>) = ap
-
-instance Functor (Eval field value error) where
-  fmap = liftM
-
-evalError :: error -> Eval field value error a
-evalError e = Eval run
-  where
-    run s = (Left e,  s)
-
 getValue :: (HackcelError error field, Ord field) => field -> Eval field value error value
-getValue f = Eval run
-  where
-    run s@(EvalState { esHackcelState = HackcelState m _ }) = case M.lookup f m of
-      Nothing -> runEvalState (evalError (errorUnknownField f)) s
-      Just (expr, Nothing) -> undefined -- TODO: Calculate expr and store the result in the state
-      Just (expr, Just (FieldResult val _)) -> case val of
-        Left e -> runEvalState (evalError e) s
-        Right x -> (Right x, s)
-
-getValue2 :: (HackcelError error field, Ord field) => field -> Eval3 field value error value
-getValue2 f = Eval3 $
+getValue f = Eval $
       do s <- get
          let EvalState { esHackcelState = HackcelState m _ } =  s
          case M.lookup f m of
@@ -87,13 +50,6 @@ getValue2 f = Eval3 $
            Just (expr, Just (FieldResult val _)) -> case val of
              Left e -> throwError e
              Right x -> return x
-
-testing :: E.ExceptT String (S.State (Double)) Int
-testing = do s <- get
-             put (s + 1.0)
-             if s > 0 then
-               return $ 1
-               else return 2
 
 {-
 evalExpression :: (HackcelError error field, Ord field) => field -> Eval field value error value
