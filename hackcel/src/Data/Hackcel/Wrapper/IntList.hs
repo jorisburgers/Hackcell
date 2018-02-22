@@ -47,9 +47,12 @@ handler "divide" [ex, ey] = do
 convert :: [Int] -> Map Field (Expression Field Value IntListError, Maybe (FieldResult Field Value IntListError))
 convert xs = snd $ foldl (\(x,s) y-> (x+1, insert (FieldInt x) (ExprLit (ValInt y), Nothing) s)) (0, empty) xs
 
-values = convert [1..10]
+values n = addExp (n+1) $ convert [1..n]
+
+addExp n s = insert (FieldInt n) (ExprApp "plus" [ExprField (FieldInt 1), ExprField (FieldInt 2)], Nothing) $
+             insert (FieldInt $ n+1) (ExprApp "minus" [ExprField (FieldInt 3), ExprField (FieldInt 4)], Nothing) s 
 
 hState = HackcelState {
-    fields = values,
+    fields = values 10,
     app = handler
 }
