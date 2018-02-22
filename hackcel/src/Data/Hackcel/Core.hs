@@ -4,6 +4,8 @@ module Data.Hackcel.Core where
 
 import Control.Monad
 import Data.Map.Strict as M
+import Control.Monad.Except as E
+import Control.Monad.State.Lazy as S
 
 newtype Spreadsheet field value error = Spreadsheet { unSpreadsheet :: Map field (Expression field value error) }
 
@@ -36,6 +38,8 @@ data EvalState field value error = EvalState
 newtype Eval field value error a = Eval
   { runEvalState :: EvalState field value error -> (Either error a, EvalState field value error) }
 
+type Eval2 field value error a = E.ExceptT error (S.State (EvalState field value error)) a
+
 instance Monad (Eval field value error) where
   return a = Eval (\s -> (Right a, s))
   Eval x >>= f = Eval g
@@ -43,6 +47,8 @@ instance Monad (Eval field value error) where
       g t = case x t of
         (Left err, s) -> (Left err, s)
         (Right y,  s) -> runEvalState (f y) s
+
+
 
 instance Applicative (Eval field value error) where
   pure = return
@@ -53,7 +59,7 @@ instance Functor (Eval field value error) where
 
 evalError :: error -> Eval field value error a
 evalError e = Eval run
-  where 
+  where
     run s = (Left e,  s)
 
 getValue :: (HackcelError error field, Ord field) => field -> Eval field value error value
@@ -65,7 +71,17 @@ getValue f = Eval run
       Just (expr, Just (FieldResult val _)) -> case val of
         Left e -> runEvalState (evalError e) s
         Right x -> (Right x, s)
-      {-
+{-
+evalExpression :: (HackcelError error field, Ord field) => field -> Eval field value error value
+evalExpression f = Eval run
+  where
+    run s@(EvalState (HackcelState m) funcs) = case M.lookup f m of
+      Nothing -> runEvalState (evalError (errorUnknownField f)) s
+
+
+
+-}
+    {-
 
 and :: Expression String Bool MyError -> Expression String Bool MyError -> Eval String Bool MyError Bool
 and ex ey = do
