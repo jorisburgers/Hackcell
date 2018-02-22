@@ -37,8 +37,11 @@ data EvalState field value error = EvalState
   }
 
 newtype Eval field value error a = Eval {
-  runEval :: E.ExceptT error (S.State (EvalState field value error)) a
+  runEvalState :: E.ExceptT error (S.State (EvalState field value error)) a
 } deriving (Monad, Functor, Applicative)
+
+runEval :: Eval field value e a -> EvalState field value e -> (Either e a, EvalState field value e)
+runEval = runState . runExceptT . runEvalState
 
 getValue :: (HackcelError error field, Ord field) => field -> Eval field value error value
 getValue f = Eval $
@@ -51,17 +54,57 @@ getValue f = Eval $
              Left e -> throwError e
              Right x -> return x
 
-{-
 evalExpression :: (HackcelError error field, Ord field) => field -> Eval field value error value
-evalExpression f = Eval run
+evalExpression f = Eval $
+      do  s <- get
+          let EvalState { esHackcelState = HackcelState m funcs } =  s
+          case M.lookup f m of
+            Nothing -> throwError (errorUnknownField f)
+            Just (expr, _) -> do  tres <- runEvalState (evalExpr' expr)
+                                  let res = Just (FieldResult (Right tres) [])
+                                  let newm = insert f (expr,res) m
+                                  put $ s {esHackcelState = HackcelState newm funcs}
+                                  return tres
+                                  -- TODO: Catch errors
   where
-    run s@(EvalState (HackcelState m) funcs) = case M.lookup f m of
-      Nothing -> runEvalState (evalError (errorUnknownField f)) s
+    evalExpr' :: (HackcelError error field, Ord field) => Expression field value error -> Eval field value error value
+    evalExpr' (ExprLit val)  = return val
+    evalExpr' (ExprField f2) = getValue f2
+    -- TODO: Do ExprApp, and ExprLetIn
+    -- evalExpr' (ExprApp f args) = do funcs <- Eval $
+    --                                         do  s <- get
+    --                                             let EvalState { esHackcelState = HackcelState m funcs } =  s
+    --                                             funcs f args
 
 
+-- newtype Test = Test { runTest :: E.ExceptT String (S.State (Double)) Int }
+--
+-- testing :: Test
+-- testing = Test $
+--           do s <- get
+--              put (s + 1.0)
+--              if s > 0 then
+--                return 1
+--                else do  let a = 3
+--                         b <- runTest testing
+--                         return b
 
--}
-    {-
+
+    -- ExprField field
+    -- | ExprLit value
+    -- | ExprLetIn String (Expression field value error) (Expression field value error)
+    -- | ExprApp String [Expression field value error]
+
+--   where
+--     run s@(EvalState (HackcelState m) funcs) = case M.lookup f m of
+--       Nothing -> runEvalState (evalError (errorUnknownField f)) s
+--
+    {- data HackcelState field value error = HackcelState
+      { fields :: Map field (Expression field value error, Maybe (FieldResult field value error))
+      , app :: String -> [Expression field value error] -> Eval field value error value
+      }
+
+
 
 and :: Expression String Bool MyError -> Expression String Bool MyError -> Eval String Bool MyError Bool
 and ex ey = do
