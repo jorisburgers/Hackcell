@@ -1,4 +1,5 @@
 {-# language MultiParamTypeClasses, FlexibleContexts #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 
 module Data.Hackcel.Core where
 
@@ -40,6 +41,10 @@ newtype Eval field value error a = Eval
 
 type Eval2 field value error a = E.ExceptT error (S.State (EvalState field value error)) a
 
+newtype Eval3 field value error a = Eval3 {
+  runEval3 :: E.ExceptT error (S.State (EvalState field value error)) a
+} deriving (Monad, Functor, Applicative)
+
 instance Monad (Eval field value error) where
   return a = Eval (\s -> (Right a, s))
   Eval x >>= f = Eval g
@@ -71,6 +76,25 @@ getValue f = Eval run
       Just (expr, Just (FieldResult val _)) -> case val of
         Left e -> runEvalState (evalError e) s
         Right x -> (Right x, s)
+
+getValue2 :: (HackcelError error field, Ord field) => field -> Eval3 field value error value
+getValue2 f = Eval3 $
+      do s <- get
+         let EvalState { esHackcelState = HackcelState m _ } =  s
+         case M.lookup f m of
+           Nothing -> throwError (errorUnknownField f)
+           Just (expr, Nothing) -> undefined -- TODO: Calculate expr and store the result in the state
+           Just (expr, Just (FieldResult val _)) -> case val of
+             Left e -> throwError e
+             Right x -> return x
+
+testing :: E.ExceptT String (S.State (Double)) Int
+testing = do s <- get
+             put (s + 1.0)
+             if s > 0 then
+               return $ 1
+               else return 2
+
 {-
 evalExpression :: (HackcelError error field, Ord field) => field -> Eval field value error value
 evalExpression f = Eval run
