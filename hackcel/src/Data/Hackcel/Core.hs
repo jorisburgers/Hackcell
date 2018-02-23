@@ -49,7 +49,7 @@ getValue f = Eval $
          let EvalState { esHackcelState = HackcelState m _ } =  s
          case M.lookup f m of
            Nothing -> throwError (errorUnknownField f)
-           Just (expr, Nothing) -> undefined -- TODO: Calculate expr and store the result in the state
+           Just (expr, Nothing) -> runEvalState $ evalExpression f
            Just (expr, Just (FieldResult val _)) -> case val of
              Left e -> throwError e
              Right x -> return x
@@ -70,11 +70,10 @@ evalExpression f = Eval $
     evalExpr' :: (HackcelError error field, Ord field) => Expression field value error -> Eval field value error value
     evalExpr' (ExprLit val)  = return val
     evalExpr' (ExprField f2) = getValue f2
-    -- TODO: Do ExprApp, and ExprLetIn
-    -- evalExpr' (ExprApp f args) = do funcs <- Eval $
-    --                                         do  s <- get
-    --                                             let EvalState { esHackcelState = HackcelState m funcs } =  s
-    --                                             funcs f args
+    evalExpr' (ExprApp f args) = Eval $ do  s <- get
+                                            let EvalState { esHackcelState = HackcelState m funcs } =  s
+                                            runEvalState $ funcs f args
+    -- TODO: Do ExprLetIn
 
 
 -- newtype Test = Test { runTest :: E.ExceptT String (S.State (Double)) Int }
