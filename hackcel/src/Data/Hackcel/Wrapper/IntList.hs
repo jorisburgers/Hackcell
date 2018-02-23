@@ -25,24 +25,33 @@ instance HackcelError IntListError Field where
     errorRecursion fields   = RecursionError $ "Circular referencing via " ++ concatMap show fields    
 
 type Eval' = Eval Field Value IntListError Value
+type Expression' = Expression Field Value IntListError
 
-opHandler :: (Int -> Int -> Int) -> [Eval'] -> Eval'
+eval :: Expression' -> Eval'
+eval = undefined
+
+opHandler :: (Int -> Int -> Int) -> [Expression'] -> Eval'
 opHandler op [ex, ey] = do
-                ValInt x <- ex
-                ValInt y <- ey
+                ValInt x <- eval ex
+                ValInt y <- eval ey
                 return $ ValInt $ op x y
 
-handler :: String -> [Eval'] -> Eval'
+handler :: String -> [Expression'] -> Eval'
 handler "plus" xs = opHandler (+) xs
 handler "minus" xs = opHandler (-) xs
 handler "times" xs = opHandler (*) xs
 handler "divide" [ex, ey] = do
-    ValInt x <- ex
-    ValInt y <- ey
+    ValInt x <- eval ex
+    ValInt y <- eval ey
     if y == 0 then
         evalError (DivideByZeroError "Divide by zero")
     else
         return $ ValInt $ div x y
+
+handler "sum" [ExprField (FieldInt p1), ExprField (FieldInt p2)] = do
+    let dif = p2 - p1
+    return $ ValInt $ dif
+
 
 convert :: [Int] -> Map Field (Expression Field Value IntListError, Maybe (FieldResult Field Value IntListError))
 convert xs = snd $ foldl (\(x,s) y-> (x+1, insert (FieldInt x) (ExprLit (ValInt y), Nothing) s)) (0, empty) xs

@@ -9,7 +9,7 @@ newtype Spreadsheet field value error = Spreadsheet { unSpreadsheet :: Map field
 
 data HackcelState field value error = HackcelState
   { fields :: Map field (Expression field value error, Maybe (FieldResult field value error))
-  , app :: String -> [Eval field value error value] -> Eval field value error value
+    , app :: String -> [Expression field value error] -> Eval field value error value
   }
 
 data FieldResult field value error = FieldResult
