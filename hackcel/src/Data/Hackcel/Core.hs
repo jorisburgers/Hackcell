@@ -12,7 +12,7 @@ newtype Spreadsheet field value error = Spreadsheet { unSpreadsheet :: Map field
 
 data HackcelState field value error = HackcelState
   { fields :: Map field (Expression field value error, Maybe (FieldResult field value error))
-    , app :: String -> [Expression field value error] -> Eval field value error value
+    , app :: String -> [Eval field value error value] -> Eval field value error value
   }
 
 data FieldResult field value error = FieldResult
@@ -70,11 +70,10 @@ evalExpression f = Eval $
     evalExpr' :: (HackcelError error field, Ord field) => Expression field value error -> Eval field value error value
     evalExpr' (ExprLit val)  = return val
     evalExpr' (ExprField f2) = getValue f2
-    -- TODO: Do ExprApp, and ExprLetIn
-    -- evalExpr' (ExprApp f args) = do funcs <- Eval $
-    --                                         do  s <- get
-    --                                             let EvalState { esHackcelState = HackcelState m funcs } =  s
-    --                                             funcs f args
+    evalExpr' (ExprApp f args) = Eval $ do  s <- get
+                                            let EvalState { esHackcelState = HackcelState m funcs } =  s
+                                            runEvalState $ funcs f (Prelude.map evalExpr' args)
+    -- TODO: Do ExprLetIn
 
 
 -- newtype Test = Test { runTest :: E.ExceptT String (S.State (Double)) Int }
