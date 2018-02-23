@@ -49,7 +49,7 @@ getValue f = Eval $
          let EvalState { esHackcelState = HackcelState m _ } =  s
          case M.lookup f m of
            Nothing -> throwError (errorUnknownField f)
-           Just (expr, Nothing) -> undefined -- TODO: Calculate expr and store the result in the state
+           Just (expr, Nothing) -> runEvalState $ evalExpression f-- TODO: Calculate expr and store the result in the state
            Just (expr, Just (FieldResult val _)) -> case val of
              Left e -> throwError e
              Right x -> return x
