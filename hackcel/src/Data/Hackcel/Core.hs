@@ -61,7 +61,7 @@ evalExpression f = Eval $
           case M.lookup f m of
             Nothing -> throwError (errorUnknownField f)
             Just (expr, _) -> do  tres <- runEvalState (evalExpr' expr)
-                                  let res = Just (FieldResult (Right tres) [])
+                                  let res = Just (FieldResult (Right tres) (referencedFields expr))
                                   let newm = insert f (expr,res) m
                                   put $ s {esHackcelState = HackcelState newm funcs}
                                   return tres
@@ -73,6 +73,26 @@ evalExpression f = Eval $
     evalExpr' (ExprApp f args) = Eval $ do  s <- get
                                             let EvalState { esHackcelState = HackcelState m funcs } =  s
                                             runEvalState $ funcs f (Prelude.map evalExpr' args)
+
+
+referencedFields :: Expression field value error -> [field]
+referencedFields (ExprField f) = [f]
+referencedFields (ExprLit _) = []
+referencedFields (ExprLetIn _ e1 e2) = referencedFields e1 ++ referencedFields e2
+referencedFields (ExprApp _ es) = concatMap referencedFields es 
+
+
+dependencies :: (HackcelError error field, Ord field) => field -> Eval field value error [field]
+dependencies field = Eval $ do 
+                      s <- get
+                      let EvalState { esHackcelState = HackcelState m funcs } =  s
+                      case M.lookup field m of
+                        Nothing -> throwError (errorUnknownField field)
+                        Just (expr, Nothing) -> return []
+                        Just (expr, Just fr) ->
+                                                do
+                                                  let FieldResult { fieldDependants = depends } = fr
+                                                  return depends
     -- TODO: Do ExprLetIn
 
 

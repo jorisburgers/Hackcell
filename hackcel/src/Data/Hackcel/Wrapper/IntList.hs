@@ -73,3 +73,15 @@ evalState field = EvalState{
   , esField = field
   , esStack = []
 }
+
+{-
+    example call: 
+    fst $ runEval (dependencies (FieldInt 12)) $ snd $ runEval (getValue (FieldInt 12)) (evalState $ FieldInt 0)
+    returns the array of 3, 4, the values that 12 depends on
+    fst $ runEval (dependencies (FieldInt 11)) $ snd $ runEval (getValue (FieldInt 11)) (evalState $ FieldInt 0)
+    returns the array of 1, 2
+    fst $ runEval (dependencies (FieldInt 9)) $ snd $ runEval (getValue (FieldInt 9)) (evalState $ FieldInt 0)
+    returns [], as it has no dependencies
+    fst $ runEval (dependencies (FieldInt 12)) $ snd $ runEval (getValue (FieldInt 9)) (evalState $ FieldInt 0)
+    returns [], as 12 is not yet calculated and has therefore no dependencies.
+-}
