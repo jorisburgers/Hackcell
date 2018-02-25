@@ -19,7 +19,7 @@ instance Show Field where
 type Expression' = Expression Field Value NumberError
 
 instance HackcelError NumberError Field where
-    errorUnknownField field = UnknownFieldError $ "Unknown error at index " ++ show field
+    errorUnknownField field = UnknownFieldError $ "Unknown field error at index " ++ show field
     errorRecursion fields   = RecursionError $ "Circular referencing via " ++ concatMap show fields  
 
 --handler "sum" [ExprField (FieldInt p1), ExprField (FieldInt p2)] = do
@@ -32,10 +32,12 @@ convertInt xs = snd $ foldl (\(x,s) y-> (x+1, insert (FieldInt x) (ExprLit (ValI
 
 convertDouble xs = snd $ foldl (\(x,s) y-> (x+1, insert (FieldInt x) (ExprLit (ValDouble (fromInteger  . toInteger $ y)), Nothing) s)) (0, empty) xs
 
-values n = addExp (n+1) $ convertDouble [1..n]
+values n = addExp (n+1) $ convertDouble [0..n]
 
 addExp n s = insert (FieldInt n) (ExprApp "plus" [ExprField (FieldInt 1), ExprField (FieldInt 2)], Nothing) $
-             insert (FieldInt $ n+1) (ExprApp "divide" [ExprField (FieldInt 3), ExprField (FieldInt 4)], Nothing) s 
+             insert (FieldInt $ n+1) (ExprApp "divide" [ExprField (FieldInt 3), ExprField (FieldInt 0)], Nothing) s 
+
+-- fst $ runEval (getValue (FieldInt 12)) (evalState $ FieldInt 0)
 
 hState = HackcelState {
     fields = values 10,
