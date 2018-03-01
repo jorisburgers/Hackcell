@@ -30,6 +30,8 @@ data FieldResult field value error = FieldResult
 class HackcelError t field where
   errorUnknownField :: field -> t
   errorRecursion :: [field] -> t
+  errorExpectedValueGotRange :: t
+  errorExpectedRangeGotValue :: t
 
 data Expression field value error
   = ExprField (field)
@@ -115,6 +117,13 @@ dependencies field = Eval $ do
     -- TODO: Do ExprLetIn
                                             
 
+expectValue :: HackcelError error field => Argument field value error -> Eval field value error value
+expectValue (AValue e)   = e
+expectValue (ARange _ _) = throwError errorExpectedValueGotRange
+
+expectRange :: HackcelError error field => Argument field value error -> Eval field value error (field, field)
+expectRange (AValue _)   = throwError errorExpectedRangeGotValue
+expectRange (ARange a b) = return (a, b)
 
 -- newtype Test = Test { runTest :: E.ExceptT String (S.State (Double)) Int }
 --
