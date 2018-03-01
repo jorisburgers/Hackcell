@@ -1,5 +1,4 @@
-{-# language MultiParamTypeClasses, FlexibleContexts #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# language MultiParamTypeClasses, FlexibleContexts, GeneralizedNewtypeDeriving #-}
 
 module Data.Hackcel.Core where
 
