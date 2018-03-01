@@ -13,6 +13,8 @@ data Value  = ValInt Int
 data NumberError    = RecursionError String
                     | UnknownFieldError String
                     | DivideByZeroError String
+                    | ErrorUnexpectedValue
+                    | ErrorUnexpectedRange
                     deriving (Show)
 
 type Eval' field = Eval field Value NumberError Value

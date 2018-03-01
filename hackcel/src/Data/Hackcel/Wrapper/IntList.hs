@@ -21,7 +21,8 @@ type Expression' = Expression Field Value NumberError
 instance HackcelError NumberError Field where
     errorUnknownField field = UnknownFieldError $ "Unknown field error at index " ++ show field
     errorRecursion fields   = RecursionError $ "Circular referencing via " ++ concatMap show fields  
-
+    errorExpectedValueGotRange = ErrorUnexpectedValue
+    errorExpectedRangeGotValue = ErrorUnexpectedRange
 
 
 --handler "sum" [ExprField (FieldInt p1), ExprField (FieldInt p2)] = do
