@@ -27,7 +27,6 @@ class HackcelError t field where
 data Expression field value error
   = ExprField field
   | ExprLit value
-  | ExprLetIn String (Expression field value error) (Expression field value error)
   | ExprApp String [Expression field value error]
 
 data EvalState field value error = EvalState
@@ -61,11 +60,17 @@ evalExpression f = Eval $
           case M.lookup f m of
             Nothing -> throwError (errorUnknownField f)
             Just (expr, _) -> do  tres <- runEvalState (evalExpr' expr)
-                                  let res = Just (FieldResult (Right tres) [])
+                                  let res = Just $ FieldResult (Right tres) []
                                   let newm = insert f (expr,res) m
                                   put $ s {esHackcelState = HackcelState newm funcs}
                                   return tres
-                                  -- TODO: Catch errors
+                              `catchError` (\e ->
+                              do
+                                  let res = Just $ FieldResult (Left e) []
+                                  let newm = insert f (expr,res) m
+                                  put $ s {esHackcelState = HackcelState newm funcs}
+                                  throwError e)
+
   where
     evalExpr' :: (HackcelError error field, Ord field) => Expression field value error -> Eval field value error value
     evalExpr' (ExprLit val)  = return val
@@ -73,7 +78,6 @@ evalExpression f = Eval $
     evalExpr' (ExprApp f args) = Eval $ do  s <- get
                                             let EvalState { esHackcelState = HackcelState m funcs } =  s
                                             runEvalState $ funcs f args
-    -- TODO: Do ExprLetIn
 
 
 -- newtype Test = Test { runTest :: E.ExceptT String (S.State (Double)) Int }
