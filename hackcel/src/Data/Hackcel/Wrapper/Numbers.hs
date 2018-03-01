@@ -49,10 +49,10 @@ doubleDivision :: Double -> Double -> Eval field Value NumberError Double
 doubleDivision x y  |  y == 0 = tError $ DivideByZeroError "div 0"-- throw error
                     |  otherwise = return $ x / y
 
-numberHandler :: String -> [Parameter field Value NumberError] -> Eval field Value NumberError Value
+numberHandler :: String -> [Argument field Value NumberError] -> Eval field Value NumberError Value
 numberHandler name p = do
-                    let PExpr ex = p !! 0
-                    let PExpr ey = p !! 1
+                    let AValue ex = p !! 0
+                    let AValue ey = p !! 1
                     x <- ex
                     y <- ey
                     case x of
