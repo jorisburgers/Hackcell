@@ -1,5 +1,4 @@
-{-# language MultiParamTypeClasses, FlexibleContexts #-}
-{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# language MultiParamTypeClasses, FlexibleContexts, GeneralizedNewtypeDeriving #-}
 
 module Data.Hackcel.Core where
 
@@ -35,7 +34,6 @@ class HackcelError t field where
 data Expression field value error
   = ExprField (field)
   | ExprLit value
-  | ExprLetIn String (Expression field value error) (Expression field value error)
   | ExprApp String [Parameter field value error]
 
 data EvalState field value error = EvalState
@@ -78,7 +76,13 @@ evalExpression f = Eval $
                                   let newm = insert f (expr,res) m
                                   put $ s {esHackcelState = HackcelState newm funcs}
                                   return tres
-                                  -- TODO: Catch errors
+                              `catchError` (\e ->
+                              do
+                                  let res = Just $ FieldResult (Left e) []
+                                  let newm = insert f (expr,res) m
+                                  put $ s {esHackcelState = HackcelState newm funcs}
+                                  throwError e)
+
   where
     evalExpr' :: (HackcelError error field, Ord field) => Expression field value error -> Eval field value error value
     evalExpr' (ExprLit val)  = return val
@@ -94,7 +98,6 @@ evalExpression f = Eval $
 referencedFields :: Expression field value error -> [field]
 referencedFields (ExprField f) = [f]
 referencedFields (ExprLit _) = []
-referencedFields (ExprLetIn _ e1 e2) = referencedFields e1 ++ referencedFields e2
 referencedFields (ExprApp _ _) = []
 
 
@@ -110,6 +113,7 @@ dependencies field = Eval $ do
                                                   let FieldResult { fieldDependants = depends } = fr
                                                   return depends
     -- TODO: Do ExprLetIn
+                                            
 
 
 -- newtype Test = Test { runTest :: E.ExceptT String (S.State (Double)) Int }
