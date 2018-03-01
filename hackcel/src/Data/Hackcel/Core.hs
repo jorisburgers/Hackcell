@@ -1,4 +1,4 @@
-{-# language MultiParamTypeClasses, FlexibleContexts, GeneralizedNewtypeDeriving #-}
+{-# language MultiParamTypeClasses, FlexibleContexts, GeneralizedNewtypeDeriving, FunctionalDependencies #-}
 
 module Data.Hackcel.Core where
 
@@ -11,22 +11,32 @@ newtype Spreadsheet field value error = Spreadsheet { unSpreadsheet :: M.Map fie
 
 data HackcelState field value error = HackcelState
   { fields :: M.Map field (Expression field value error, Maybe (FieldResult field value error))
-  , app :: String -> [Expression field value error] -> Eval field value error value
+  , app :: String -> [Argument field value error] -> Eval field value error value
   }
 
+data Argument field value error
+  = AValue (Eval field value error value)
+  | ARange field field
+
+data Parameter field value error  = PExpr (Expression field value error)
+                                  | PRange field field
+
+-- rangeApp "somals" [] [f1, f2] = 
 data FieldResult field value error = FieldResult
   { fieldValue :: Either error value
   , fieldDependants :: [field]
   }
 
-class HackcelError t field where
+class HackcelError t field | t -> field where
   errorUnknownField :: field -> t
   errorRecursion :: [field] -> t
+  errorExpectedValueGotRange :: t
+  errorExpectedRangeGotValue :: t
 
 data Expression field value error
-  = ExprField field
+  = ExprField (field)
   | ExprLit value
-  | ExprApp String [Expression field value error]
+  | ExprApp String [Parameter field value error]
 
 data EvalState field value error = EvalState
   { esHackcelState :: HackcelState field value error
@@ -37,6 +47,11 @@ data EvalState field value error = EvalState
 newtype Eval field value error a = Eval {
   runEvalState :: ExceptT error (State (EvalState field value error)) a
 } deriving (Monad, Functor, Applicative)
+
+tError :: error -> Eval field value error return
+tError =  Eval . throwError
+
+
 
 runEval :: Eval field value e a -> EvalState field value e -> (Either e a, EvalState field value e)
 runEval = runState . runExceptT . runEvalState
@@ -59,7 +74,7 @@ evalExpression f = Eval $
           case M.lookup f m of
             Nothing -> throwError (errorUnknownField f)
             Just (expr, _) -> do  tres <- runEvalState (evalExpr' expr)
-                                  let res = Just $ FieldResult (Right tres) []
+                                  let res = Just (FieldResult (Right tres) (referencedFields expr))
                                   let newm = M.insert f (expr,res) m
                                   put $ s {esHackcelState = HackcelState newm funcs}
                                   return tres
@@ -76,8 +91,39 @@ evalExpression f = Eval $
     evalExpr' (ExprField f2) = getValue f2
     evalExpr' (ExprApp f args) = Eval $ do  s <- get
                                             let EvalState { esHackcelState = HackcelState m funcs } =  s
-                                            runEvalState $ funcs f args
+                                            runEvalState $ funcs f (Prelude.map toArgument args)
+    toArgument ::  (HackcelError error field, Ord field) => Parameter field value error -> Argument field value error
+    toArgument (PRange f1 f2) = ARange f1 f2
+    toArgument (PExpr e)      = AValue $ evalExpr' e
 
+
+referencedFields :: Expression field value error -> [field]
+referencedFields (ExprField f) = [f]
+referencedFields (ExprLit _) = []
+referencedFields (ExprApp _ _) = []
+
+
+dependencies :: (HackcelError error field, Ord field) => field -> Eval field value error [field]
+dependencies field = Eval $ do 
+                      s <- get
+                      let EvalState { esHackcelState = HackcelState m funcs } =  s
+                      case M.lookup field m of
+                        Nothing -> throwError (errorUnknownField field)
+                        Just (expr, Nothing) -> return []
+                        Just (expr, Just fr) ->
+                                                do
+                                                  let FieldResult { fieldDependants = depends } = fr
+                                                  return depends
+    -- TODO: Do ExprLetIn
+                                            
+
+expectValue :: HackcelError error field => Argument field value error -> Eval field value error value
+expectValue (AValue e)   = e
+expectValue (ARange _ _) = Eval $ throwError errorExpectedValueGotRange
+
+expectRange :: HackcelError error field => Argument field value error -> Eval field value error (field, field)
+expectRange (AValue _)   = Eval $ throwError errorExpectedRangeGotValue
+expectRange (ARange a b) = return (a, b)
 
 -- newtype Test = Test { runTest :: E.ExceptT String (S.State (Double)) Int }
 --
