@@ -22,6 +22,8 @@ instance HackcelError NumberError Field where
     errorUnknownField field = UnknownFieldError $ "Unknown field error at index " ++ show field
     errorRecursion fields   = RecursionError $ "Circular referencing via " ++ concatMap show fields  
 
+
+
 --handler "sum" [ExprField (FieldInt p1), ExprField (FieldInt p2)] = do
     --let res = map (eval.ExprField) [p1..p2]
     --return $ ValInt $ dif

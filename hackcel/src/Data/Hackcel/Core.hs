@@ -12,9 +12,17 @@ newtype Spreadsheet field value error = Spreadsheet { unSpreadsheet :: Map field
 
 data HackcelState field value error = HackcelState
   { fields :: Map field (Expression field value error, Maybe (FieldResult field value error))
-    , app :: String -> [Eval field value error value] -> Eval field value error value
+  , app :: String -> [Argument field value error] -> Eval field value error value
   }
 
+data Argument field value error
+  = AValue (Eval field value error value)
+  | ARange field field
+
+data Parameter field value error  = PExpr (Expression field value error)
+                                  | PRange field field
+
+-- rangeApp "somals" [] [f1, f2] = 
 data FieldResult field value error = FieldResult
   { fieldValue :: Either error value
   , fieldDependants :: [field]
@@ -25,10 +33,10 @@ class HackcelError t field where
   errorRecursion :: [field] -> t
 
 data Expression field value error
-  = ExprField field
+  = ExprField (field)
   | ExprLit value
   | ExprLetIn String (Expression field value error) (Expression field value error)
-  | ExprApp String [Expression field value error]
+  | ExprApp String [Parameter field value error]
 
 data EvalState field value error = EvalState
   { esHackcelState :: HackcelState field value error
@@ -39,6 +47,11 @@ data EvalState field value error = EvalState
 newtype Eval field value error a = Eval {
   runEvalState :: E.ExceptT error (S.State (EvalState field value error)) a
 } deriving (Monad, Functor, Applicative)
+
+tError :: error -> Eval field value error return
+tError =  Eval . throwError
+
+
 
 runEval :: Eval field value e a -> EvalState field value e -> (Either e a, EvalState field value e)
 runEval = runState . runExceptT . runEvalState
@@ -72,14 +85,17 @@ evalExpression f = Eval $
     evalExpr' (ExprField f2) = getValue f2
     evalExpr' (ExprApp f args) = Eval $ do  s <- get
                                             let EvalState { esHackcelState = HackcelState m funcs } =  s
-                                            runEvalState $ funcs f (Prelude.map evalExpr' args)
+                                            runEvalState $ funcs f (Prelude.map toArgument args)
+    toArgument ::  (HackcelError error field, Ord field) => Parameter field value error -> Argument field value error
+    toArgument (PRange f1 f2) = ARange f1 f2
+    toArgument (PExpr e)      = AValue $ evalExpr' e
 
 
 referencedFields :: Expression field value error -> [field]
 referencedFields (ExprField f) = [f]
 referencedFields (ExprLit _) = []
 referencedFields (ExprLetIn _ e1 e2) = referencedFields e1 ++ referencedFields e2
-referencedFields (ExprApp _ es) = concatMap referencedFields es 
+referencedFields (ExprApp _ _) = []
 
 
 dependencies :: (HackcelError error field, Ord field) => field -> Eval field value error [field]
