@@ -36,8 +36,9 @@ convertDouble xs = snd $ foldl (\(x,s) y-> (x+1, insert (FieldInt x) (ExprLit (V
 
 values n = addExp (n+1) $ convertDouble [0..n]
 
-addExp n s = insert (FieldInt n) (ExprApp "plus" [ExprField (FieldInt 1), ExprField (FieldInt 2)], Nothing) $
-             insert (FieldInt $ n+1) (ExprApp "divide" [ExprField (FieldInt 3), ExprField (FieldInt 0)], Nothing) s 
+addExp n s = insert (FieldInt n) (ExprApp "plus" [PExpr $ ExprField (FieldInt 1), PExpr $ ExprField (FieldInt 2)], Nothing) $
+             insert (FieldInt $ n+1) (ExprApp "divide" [PExpr $ ExprField (FieldInt 3), PExpr $ ExprField (FieldInt 0)], Nothing) s 
+
 
 -- fst $ runEval (getValue (FieldInt 12)) (evalState $ FieldInt 0)
 
