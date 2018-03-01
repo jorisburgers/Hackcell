@@ -3,14 +3,14 @@
 module Data.Hackcel.Core where
 
 import Control.Monad
-import Data.Map.Strict as M
-import Control.Monad.Except as E
-import Control.Monad.State.Lazy as S
+import qualified Data.Map.Strict as M
+import Control.Monad.Except
+import Control.Monad.State.Lazy
 
-newtype Spreadsheet field value error = Spreadsheet { unSpreadsheet :: Map field (Expression field value error) }
+newtype Spreadsheet field value error = Spreadsheet { unSpreadsheet :: M.Map field (Expression field value error) }
 
 data HackcelState field value error = HackcelState
-  { fields :: Map field (Expression field value error, Maybe (FieldResult field value error))
+  { fields :: M.Map field (Expression field value error, Maybe (FieldResult field value error))
   , app :: String -> [Expression field value error] -> Eval field value error value
   }
 
@@ -35,7 +35,7 @@ data EvalState field value error = EvalState
   }
 
 newtype Eval field value error a = Eval {
-  runEvalState :: E.ExceptT error (S.State (EvalState field value error)) a
+  runEvalState :: ExceptT error (State (EvalState field value error)) a
 } deriving (Monad, Functor, Applicative)
 
 runEval :: Eval field value e a -> EvalState field value e -> (Either e a, EvalState field value e)
@@ -60,13 +60,13 @@ evalExpression f = Eval $
             Nothing -> throwError (errorUnknownField f)
             Just (expr, _) -> do  tres <- runEvalState (evalExpr' expr)
                                   let res = Just $ FieldResult (Right tres) []
-                                  let newm = insert f (expr,res) m
+                                  let newm = M.insert f (expr,res) m
                                   put $ s {esHackcelState = HackcelState newm funcs}
                                   return tres
                               `catchError` (\e ->
                               do
                                   let res = Just $ FieldResult (Left e) []
-                                  let newm = insert f (expr,res) m
+                                  let newm = M.insert f (expr,res) m
                                   put $ s {esHackcelState = HackcelState newm funcs}
                                   throwError e)
 
