@@ -6,6 +6,7 @@ import Data.Hackcel.Core
 import Control.Monad.Except
 import Data.Maybe
 
+
 data Value  = ValInt Int
             | ValDouble Double
             deriving Show
@@ -46,6 +47,8 @@ doubleNameOp  = [
 intDivision :: Int -> Int -> Eval field Value NumberError Int
 intDivision x y |  y == 0 = tError $ DivideByZeroError "div 0" -- throw error
                 |  otherwise = return $ x `div` y
+
+
 
 doubleDivision :: Double -> Double -> Eval field Value NumberError Double
 doubleDivision x y  |  y == 0 = tError $ DivideByZeroError "div 0"-- throw error
