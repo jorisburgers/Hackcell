@@ -6,7 +6,7 @@ module Data.Hackcel.Wrapper.IntList where
 import Data.Hackcel.Core
 import Data.Hackcel.Wrapper.Numbers
 
-import Data.Map.Strict hiding (foldl, map)
+import Data.Map.Strict hiding (foldl, map, foldr)
 
 data Field = FieldInt Int
             deriving (Eq, Ord)
@@ -54,8 +54,24 @@ evalState field = EvalState{
   , esStack = []
 }
 
+prettyprint :: EvalState Field Value NumberError -> String
+prettyprint evalS = foldr printField "" $ toAscList allFields
+  where
+    hackelstate = esHackcelState evalS
+    allFields = fields hackelstate
+
+    printField (k, a) s = show k ++ ": " ++ printValue a ++ "\n" ++ s
+    printValue (expr, Nothing)  = "=" ++ show expr ++ ": --"
+    printValue (expr, Just val) = "=" ++ show expr ++ ": " ++ case fieldValue val of
+      Left e -> show e
+      Right v -> show v
+
+
+prettyprinter :: EvalState Field Value NumberError -> IO ()
+prettyprinter evalS = do  let res = prettyprint evalS
+                          putStrLn res
 {-
-    example call: 
+    example call:
     fst $ runEval (dependencies (FieldInt 12)) $ snd $ runEval (getValue (FieldInt 12)) (evalState $ FieldInt 0)
     returns the array of 3, 4, the values that 12 depends on
     fst $ runEval (dependencies (FieldInt 11)) $ snd $ runEval (getValue (FieldInt 11)) (evalState $ FieldInt 0)

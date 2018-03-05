@@ -7,6 +7,8 @@ import qualified Data.Map.Strict as M
 import Control.Monad.Except
 import Control.Monad.State.Lazy
 
+import Data.List (intercalate)
+
 newtype Spreadsheet field value error = Spreadsheet { unSpreadsheet :: M.Map field (Expression field value error) }
 
 data HackcelState field value error = HackcelState
@@ -21,7 +23,12 @@ data Argument field value error
 data Parameter field value error  = PExpr (Expression field value error)
                                   | PRange field field
 
--- rangeApp "somals" [] [f1, f2] = 
+instance (Show field, Show value, Show error) => Show (Parameter field value error)
+  where
+    show (PExpr expr) = show expr
+    show (PRange f1 f2) = "[" ++ show f1 ++ ":" ++ show f2 ++ "]"
+
+-- rangeApp "somals" [] [f1, f2] =
 data FieldResult field value error = FieldResult
   { fieldValue :: Either error value
   , fieldDependants :: [field]
@@ -34,9 +41,15 @@ class HackcelError t field | t -> field where
   errorExpectedRangeGotValue :: t
 
 data Expression field value error
-  = ExprField (field)
+  = ExprField field
   | ExprLit value
   | ExprApp String [Parameter field value error]
+
+instance (Show field, Show value, Show error) => Show (Expression field value error)
+  where
+    show (ExprField field) = "$" ++ show field
+    show (ExprLit value)   = show value
+    show (ExprApp name ps) = name ++ "(" ++ intercalate "," (map show ps) ++ ")"
 
 data EvalState field value error = EvalState
   { esHackcelState :: HackcelState field value error
@@ -104,7 +117,7 @@ referencedFields (ExprApp _ _) = []
 
 
 dependencies :: (HackcelError error field, Ord field) => field -> Eval field value error [field]
-dependencies field = Eval $ do 
+dependencies field = Eval $ do
                       s <- get
                       let EvalState { esHackcelState = HackcelState m funcs } =  s
                       case M.lookup field m of
@@ -115,7 +128,7 @@ dependencies field = Eval $ do
                                                   let FieldResult { fieldDependants = depends } = fr
                                                   return depends
     -- TODO: Do ExprLetIn
-                                            
+
 
 expectValue :: HackcelError error field => Argument field value error -> Eval field value error value
 expectValue (AValue e)   = e
