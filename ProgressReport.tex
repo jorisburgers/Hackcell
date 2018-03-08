@@ -13,6 +13,19 @@
 	\section{Main Data Types and Techniques}
 	
 	\section{Progress of Implementation}
+	The implementation of Hackcell is split in two distinct parts: the core and the wrapper. The wrapper depends on the core.
+	\subsection{Core}
+	The core provides a generic interface to handle spreadsheet calculations. At the moment, it handles the retrieval of values, the evaluation of fields, the handling of errors and the caching of already calculated values.
+	We have not yet implemented dependency tracking, discovery of circular references and the ability to update fields.
+
+	\subsection{Wrapper}
+	The wrapper is a collection of functions and data types that can be used to construct spreadsheets, restricted to specific types for field indices and values. It demonstrates the functionality of the core. It has to be noted however, that wrapper is not necessary to use Hackcel, but provides useful functionality. Some of these modules can be used without another wrapper module, like Numbers or DSL, but others, like NumberList and NumberTable, depend on other wrapper modules to do their computations.
+	\subsubsection{Numbers}
+	Numbers provide a datatype that can be used as a value to store \textit{Int} and \textit{Double} values in a spreadsheet. Number also provide the basic operations addition, subtraction, multiplication and division. It is not yet possible to combine a \textit{Int} and \textit{Double} value in one operation.
+	\subsubsection{NumberList \& NumberTable}	
+	NumberList and NumberTable provide respectably a 1-dimensional and 2-dimensional spreadsheet that uses the values and operations from Numbers. They also provide the functionality of creating a spreadsheet from a 1-dimensional or 2-dimensional list of expressions. Normally, the user has to provide at which field an expression need to be, but in this case, all expressions are placed in fields that are sequential, starting from 0.
+\subsubsection{DSL}
+	The DSL provides functionality for easily executing the wrapper by creating the necessary states. It allows users to place values at specific fields and construct a spreadsheet, given a \textit{Map} of fields and expressions and a handler.
 	
 	\section{Timeline}
 		\begin{tabular}{|r|l|l|} \hline
