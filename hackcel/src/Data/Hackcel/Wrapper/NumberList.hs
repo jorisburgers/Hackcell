@@ -37,18 +37,6 @@ listToSpreadSheet xs = createHackcel (Spreadsheet $ fromList fields) numberHandl
                         fields = map (\(x, i) -> x @@ field i) $ 
                                     fst $ foldl (\x y -> (fst x ++ [(y, snd x)], snd x + 1)) ([], 0) xs 
 
-prettyprint :: HackcelState Field Value NumberError -> String
-prettyprint hackcel = foldr printField "" $ toAscList allFields
-  where
-    allFields = fields hackcel
-    printField (k, a) s = show k ++ ": " ++ printValue a ++ "\n" ++ s
-    printValue (expr, Nothing)  = "=" ++ show expr ++ ": <not calculated>"
-    printValue (expr, Just val) = "=" ++ show expr ++ ": " ++ case fieldValue val of
-      Left e -> show e
-      Right v -> show v
-
-prettyprinter :: HackcelState Field Value NumberError -> IO ()
-prettyprinter = putStrLn . prettyprint
 {-
     example call:
     fst $ runEval (dependencies (FieldInt 12)) $ snd $ runEval (getValue (FieldInt 12)) (evalState $ FieldInt 0)
