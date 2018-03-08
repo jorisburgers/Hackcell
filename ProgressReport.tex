@@ -7,7 +7,7 @@
 \usemintedstyle{manni}
 
 \title{
-	Progress Report: Hackell \\
+	Progress Report: Hackcell \\
 	\vskip 0.5cm
 	\large{A spreadsheet library in Haskell}
 }
@@ -15,9 +15,9 @@
 \begin{document}
 	\maketitle
 	\section{Main Data Types and Techniques}
-	In the core we implement the data types, where we do not specify what the data type of the field, the values and the errors should be. The implementation should specify this further, e.g. (Int, Int) for fields, Double for values, and String for errors.
+	In the core we implement the data types, where we do not specify what the data type of the field, the values and the errors should be. The implementation should specify this further, e.g. (Int, Int) for fields, Double for values, and custom data type for errors.
 	
-	In listing \ref{listing:datatypes} all the data types that are used in the core can be found. \textit{Spreadsheet} is used to initialize the \textit{HackellState}. The \textit{HackellState} saves the expressions and results of all the fields. It also contains a function \textit{app}, where all the functions that can be used in the spreadsheet should be defined. 
+	In listing \ref{listing:datatypes} all the data types that are used in the core can be found. \textit{Spreadsheet} is used to initialize the \textit{HackcellState}. The \textit{HackcellState} saves the expressions and results of all the fields. It also contains a function \textit{app}, where all the functions that can be used in the spreadsheet should be defined. 
 	
 	\textit{Eval} is a wrapper with an ExceptTransformer applied to the State monad. With this we can use a state, that is always passed and the result of the state monad can then either be an error or the normal result. This lets us use all the normal state and error functionality of the \textit{Control.Monad.Except} and \textit{Control.Monad.State} libraries. We put a data type around it, such that users cannot access the state internally. The state that is passes around is the \textit{EvalState}. This contains the \textit{HackcellState}, the field that is being calculated (the first one the user request, because it can recurse) and the stack of all the fields that are being calculated. The stack is used to find circular dependencies.
 	
@@ -38,7 +38,7 @@
 newtype Spreadsheet field value err =
   Spreadsheet { unSpreadsheet :: M.Map field (Expression field value err) }
      
-data HackellState field value err = HackellState
+data HackcellState field value err = HackcellState
   { fields :: M.Map field (Expression field value err
                           , Maybe (FieldResult field value err))
   , app :: String -> [Argument field value err] -> Eval field value err value }
@@ -48,7 +48,7 @@ newtype Eval field value err a = Eval {
   } deriving (Monad, Functor, Applicative)
 
 data EvalState field value err = EvalState
-  { esHackellState :: HackellState field value err
+  { esHackcellState :: HackcellState field value err
   , esField :: field
   , esStack :: [field]
   }
@@ -64,7 +64,7 @@ data FieldResult field value err = FieldResult
   { fieldValue :: Either err value
   , fieldDependants :: [field] }
 
-class Hackellerror t field | t -> field where
+class Hackcellerror t field | t -> field where
   errorUnknownField :: field -> t
   errorRecursion :: [field] -> t
   errorExpectedValueGotRange :: t
