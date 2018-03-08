@@ -3,8 +3,8 @@ module Data.Hackcel.Wrapper.DSL where
 import Data.Hackcel.Core
 import Data.Map.Lazy
 
-at ::  Expression field value error -> field -> (field, (Expression field value error, Maybe (FieldResult field value error)))
-at e f =  (f,(e, Nothing))
+(@@) ::  Expression field value error -> field -> (field, (Expression field value error, Maybe (FieldResult field value error)))
+e @@ f =  (f,(e, Nothing))
 
 constructSpreadSheet :: Map field (Expression field value error, Maybe (FieldResult field value error))
                         -> (String -> [Argument field value error] -> Eval field value error value)

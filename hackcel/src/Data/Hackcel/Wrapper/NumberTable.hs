@@ -34,7 +34,7 @@ listToSpreadSheet xss   | not (sameLengths xss) = error "multidimensionale array
                             sameLengths :: [[a]] -> Bool
                             sameLengths []  = True
                             sameLengths xss = and $ map (\xs -> length (head xss) == length xs) xss
-                            fieldCel    x c r           = x `at` field (r, c)
+                            fieldCel    x c r           = x @@ field (r, c)
                             fieldRow    [] c r          = []
                             fieldRow    (x:xs) c r      = fieldCel x c r : fieldRow xs (c+1) r
                             fields      []  c r         = []

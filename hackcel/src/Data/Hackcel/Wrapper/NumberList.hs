@@ -34,7 +34,7 @@ listToSpreadSheet :: [Expression Field Value NumberError] -> EvalState Field Val
 listToSpreadSheet xs = constructSpreadSheet (fromList fields) numberHandler
                     where
                         fields :: [(Field, (Expression Field Value NumberError, Maybe (FieldResult Field Value NumberError)))]
-                        fields = map (\(x, i) -> x `at` field i) $ 
+                        fields = map (\(x, i) -> x @@ field i) $ 
                                     fst $ foldl (\x y -> (fst x ++ [(y, snd x)], snd x + 1)) ([], 0) xs 
 
 {-
@@ -49,14 +49,14 @@ listToSpreadSheet xs = constructSpreadSheet (fromList fields) numberHandler
     returns [], as 12 is not yet calculated and has therefore no dependencies.
 -}
 
-values = map (\x -> valueInt x `at` field x) [0..10]
+values = map (\x -> valueInt x @@ field x) [0..10]
 
 computations = 
     [
-        op "plus" [fieldExpr 3, fieldExpr 5] `at` field 11,
-        op "plus" [fieldExpr 11, fieldExpr 8] `at` field 12,
-        op "divide" [fieldExpr 3, valueInt 0] `at` field 13,
-        op "minus" [valueInt 3, valueInt 5] `at` field 14        
+        op "plus" [fieldExpr 3, fieldExpr 5] @@ field 11,
+        op "plus" [fieldExpr 11, fieldExpr 8] @@ field 12,
+        op "divide" [fieldExpr 3, valueInt 0] @@ field 13,
+        op "minus" [valueInt 3, valueInt 5] @@ field 14        
     ]
 
 spreadSheet = constructSpreadSheet (fromList (values ++ computations)) numberHandler
