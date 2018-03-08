@@ -35,8 +35,14 @@ test-suite test
 
 library
   exposed-modules:     Data.Hackcel.Core
-                      , Data.Hackcel.Wrapper.IntList
-  -- other-modules:       
+                     , Data.Hackcel.Wrapper.DSL
+                     , Data.Hackcel.Wrapper.NumberList
+                     , Data.Hackcel.Wrapper.Numbers
+                     , Data.Hackcel.Wrapper.NumberTable
+  other-modules:       Data.Hackcel.Core.Eval
+                     , Data.Hackcel.Core.Expression
+                     , Data.Hackcel.Core.Spreadsheet
+                     , Data.Hackcel.Core.Utils
   -- other-extensions:    
   build-depends:       base >=4.10 && <4.11
                       , containers >=0.5.10 && <0.6
