@@ -62,12 +62,10 @@ doubleDivision :: Double -> Double -> Eval field Value NumberError Double
 doubleDivision x y  |  y == 0 = tError $ DivideByZeroError "div 0"-- throw error
                     |  otherwise = return $ x / y
 
-numberHandler :: String -> [Argument field Value NumberError] -> Eval field Value NumberError Value
+numberHandler :: (HackcelError NumberError field) => String -> [Argument field Value NumberError] -> Eval field Value NumberError Value
 numberHandler name p = do
-                    let AValue ex = p !! 0
-                    let AValue ey = p !! 1
-                    x <- ex
-                    y <- ey
+                    x <- expectValue (p !! 0)
+                    y <- expectValue (p !! 1)
                     case x of
                         ValInt _    -> intOpHandler (op intNameOp) [x, y]
                         ValDouble _ -> doubleOpHandler (op doubleNameOp) [x, y]

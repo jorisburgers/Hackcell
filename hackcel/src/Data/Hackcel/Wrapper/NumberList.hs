@@ -30,29 +30,25 @@ instance HackcelError NumberError Field where
     errorExpectedValueGotRange = ErrorUnexpectedValue
     errorExpectedRangeGotValue = ErrorUnexpectedRange
 
-listToSpreadSheet :: [Expression Field Value NumberError] -> EvalState Field Value NumberError
-listToSpreadSheet xs = constructSpreadSheet (fromList fields) numberHandler
+listToSpreadSheet :: [Expression Field Value NumberError] -> HackcelState Field Value NumberError
+listToSpreadSheet xs = createHackcel (Spreadsheet $ fromList fields) numberHandler
                     where
-                        fields :: [(Field, (Expression Field Value NumberError, Maybe (FieldResult Field Value NumberError)))]
+                        fields :: [(Field, Expression Field Value NumberError)]
                         fields = map (\(x, i) -> x @@ field i) $ 
                                     fst $ foldl (\x y -> (fst x ++ [(y, snd x)], snd x + 1)) ([], 0) xs 
 
-prettyprint :: EvalState Field Value NumberError -> String
-prettyprint evalS = foldr printField "" $ toAscList allFields
+prettyprint :: HackcelState Field Value NumberError -> String
+prettyprint hackcel = foldr printField "" $ toAscList allFields
   where
-    hackelstate = esHackcelState evalS
-    allFields = fields hackelstate
-
+    allFields = fields hackcel
     printField (k, a) s = show k ++ ": " ++ printValue a ++ "\n" ++ s
-    printValue (expr, Nothing)  = "=" ++ show expr ++ ": --"
+    printValue (expr, Nothing)  = "=" ++ show expr ++ ": <not calculated>"
     printValue (expr, Just val) = "=" ++ show expr ++ ": " ++ case fieldValue val of
       Left e -> show e
       Right v -> show v
 
-
-prettyprinter :: EvalState Field Value NumberError -> IO ()
-prettyprinter evalS = do  let res = prettyprint evalS
-                          putStrLn res
+prettyprinter :: HackcelState Field Value NumberError -> IO ()
+prettyprinter = putStrLn . prettyprint
 {-
     example call:
     fst $ runEval (dependencies (FieldInt 12)) $ snd $ runEval (getValue (FieldInt 12)) (evalState $ FieldInt 0)
@@ -75,7 +71,7 @@ computations =
         op "minus" [valueInt 3, valueInt 5] @@ field 14        
     ]
 
-spreadSheet = constructSpreadSheet (fromList (values ++ computations)) numberHandler
+spreadSheet = createHackcel (Spreadsheet $ fromList (values ++ computations)) numberHandler
 
 expressions = [valueInt 3, valueInt 5, valueInt 7, op "plus" [fieldExpr 2, fieldExpr 0], valueDouble 3.5]
 

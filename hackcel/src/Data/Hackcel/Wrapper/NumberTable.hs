@@ -27,9 +27,9 @@ instance HackcelError NumberError Field where
     errorExpectedValueGotRange = ErrorUnexpectedValue
     errorExpectedRangeGotValue = ErrorUnexpectedRange
 
-listToSpreadSheet :: [[Expression Field Value NumberError]] -> EvalState Field Value NumberError
+listToSpreadSheet :: [[Expression Field Value NumberError]] -> HackcelState Field Value NumberError
 listToSpreadSheet xss   | not (sameLengths xss) = error "multidimensionale array not all the same size"
-                        | otherwise             = constructSpreadSheet (fromList $ concat $ fields xss 0 0) numberHandler 
+                        | otherwise             = createHackcel (Spreadsheet $ fromList $ concat $ fields xss 0 0) numberHandler 
                         where
                             sameLengths :: [[a]] -> Bool
                             sameLengths []  = True

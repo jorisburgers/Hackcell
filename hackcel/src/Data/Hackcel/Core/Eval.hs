@@ -1,6 +1,6 @@
 {-# language MultiParamTypeClasses, FlexibleContexts, GeneralizedNewtypeDeriving, FunctionalDependencies #-}
 
-module Data.Hackcel.Core.Eval (Eval(..), App, HackcelState(..), runEval, Argument(..), getValue) where
+module Data.Hackcel.Core.Eval (Eval(..), App, HackcelState(..), runField, Argument(..), getValue) where
 
 import Control.Monad
 import qualified Data.Map.Strict as M
@@ -30,6 +30,12 @@ newtype Eval field value error a = Eval {
 
 runEval :: Eval field value e a -> EvalState field value e -> (Either e a, EvalState field value e)
 runEval = runState . runExceptT . runEvalState
+
+runField :: (HackcelError error field, Ord field) => field -> HackcelState field value error -> (Either error value, HackcelState field value error)
+runField f hackcel = (result, finalHackcel)
+  where
+    initial = EvalState hackcel f []
+    (result, (EvalState finalHackcel _ _)) = runEval (evalExpression f) initial
 
 data Argument field value error
   = AValue (Eval field value error value)
