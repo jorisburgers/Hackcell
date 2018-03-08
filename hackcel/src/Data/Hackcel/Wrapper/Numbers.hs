@@ -20,6 +20,14 @@ data NumberError    = RecursionError String
 
 type Eval' field = Eval field Value NumberError Value
 
+valueDouble :: Double -> Expression field Value NumberError 
+valueDouble = ExprLit . ValDouble 
+
+valueInt :: Int -> Expression field Value NumberError 
+valueInt = ExprLit . ValInt 
+
+op :: String -> [Expression field Value NumberError] -> Expression field Value NumberError 
+op name es = ExprApp name $ map PExpr es
 
 intOpHandler :: (Int -> Int -> Eval field Value NumberError Int) -> [Value] -> Eval field Value NumberError Value
 intOpHandler op [ValInt x, ValInt y] = (op x y) >>= return . ValInt
@@ -63,5 +71,7 @@ numberHandler name p = do
                     case x of
                         ValInt _    -> intOpHandler (op intNameOp) [x, y]
                         ValDouble _ -> doubleOpHandler (op doubleNameOp) [x, y]
-                    where op lst = fromJust $ lookup name lst 
+                    where op lst = fromJust $ lookup name lst
+
+
 
