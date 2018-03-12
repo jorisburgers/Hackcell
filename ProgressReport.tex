@@ -15,15 +15,19 @@
 \begin{document}
 	\maketitle
 	\section{Main Data Types and Techniques}
-	In the core we implement the data types, where we do not specify what the data type of the field, the values and the errors should be. The implementation should specify this further, e.g. (Int, Int) for fields, Double for values, and custom data type for errors.
+	Our project is split in two parts: the core, which implements a generic interface to work with spreadsheets, and a wrapper, which is not generic but practically demonstrates the functionality of the core and will become a simple spreadsheet application.
 	
-	In listing \ref{listing:datatypes} all the data types that are used in the core can be found. \textit{Spreadsheet} is used to initialize the \textit{HackcellState}. The \textit{HackcellState} saves the expressions and results of all the fields. It also contains a function \textit{app}, where all the functions that can be used in the spreadsheet should be defined. \textit{App} takes a String argument that identifies the function.
+	In the core we implement the data types, where we do not specify what the types of the field, the values and the errors should be. The implementation should specify this further, e.g. \texttt{(Int, Int)} for fields, \texttt{Double} for values, and custom data type for errors.
 	
-	\textit{Eval} is a wrapper with an ExceptTransformer applied to the State monad. With this we can use a state, that is always passed and the result of the state monad can then either be an error or the normal result. This lets us use all the normal state and error functionality of the \textit{Control.Monad.Except} and \textit{Control.Monad.State} libraries. We put a data type around it, such that users cannot access the state internally. The state that is passes around is the \textit{EvalState}. This contains the \textit{HackcellState}, the field that is being calculated (the first one the user request, because it can recurse) and the stack of all the fields that are being calculated. The stack is used to find circular dependencies.
+	All the data types that are used in the core can be found in listing \ref{listing:datatypes}. \texttt{Spreadsheet} is used to initialize the \texttt{HackcellState}. The \texttt{HackcellState} saves the expressions and results of all the fields. It also contains a function \texttt{app}, where all the functions that can be used in the spreadsheet should be defined. \texttt{App} takes a String argument that identifies the function.
 	
-	The arguments and parameters are used for function applications. The argument is eventually passed to the \textit{app} function, it has the Eval monad, and not the expression. The functions in \textit{app} should only work with values or ranges. The error handling of wrong expressions should be handled in the core.
+	\texttt{Eval} is a wrapper with an ExceptTransformer applied to the State monad. With this we can use a state, that is always passed and the result of the state monad can then either be an error or the normal result. This lets us use all the normal state and error functionality of \texttt{Control.Monad.Except} and \texttt{Control.Monad.State} modules. We put a data type around it, such that users cannot access the state internally. The state that is passes around is the \texttt{EvalState}. This contains the \texttt{HackcellState}, the field that is being calculated (the first one the user request, because it can recurse) and the stack of all the fields that are being calculated. The stack is used to find circular dependencies.
 	
-	\textit{FieldResult} is used to save the results of calculations, either an error or a value. We also store which other fields depend on the result, so that we can recalculate them, if the current field is changed.
+	A parameter of a function call can either be an expression or a range. The latter can be used to implement the \texttt{SUM} method from Excel. Since we do not want to pass an expression to the \texttt{app} function, we instead created a new data type, \texttt{Argument}, which is either a value (in the \texttt{Eval} monad) or a range. Given that values are passed in the \texttt{Eval} monad, one can implement lazy operators such as logical expressions (\texttt{AND}) or an if-then-else construct.
+	
+	The arguments and parameters are used for function applications. The argument is eventually passed to the \texttt{app} function, it has the Eval monad, and not the expression. The functions in \texttt{app} should only work with values or ranges. The error handling of wrong expressions should be handled in the core.
+	
+	\texttt{FieldResult} is used to save the results of calculations, either an error or a value. We also store which other fields depend on the result, so that we can recalculate them, if the current field is changed.
 	
 	We make a class of standard errors, which the wrapper should implement (with own error messages). And for expressions, we either have a value, a range or an application of a function.
 	
@@ -86,13 +90,13 @@ data Expression field value err
 	We have not yet implemented dependency tracking, discovery of circular references and the ability to update fields.
 
 	\subsection{Wrapper}
-	The wrapper is a collection of functions and data types that can be used to construct spreadsheets, restricted to specific types for field indices and values. It demonstrates the functionality of the core. It has to be noted however, that wrapper is not necessary to use Hackcel, but provides useful functionality. Some of these modules can be used without another wrapper module, like Numbers or DSL, but others, like NumberList and NumberTable, depend on other wrapper modules to do their computations.
+	The wrapper is a collection of functions and data types that can be used to construct spreadsheets, restricted to specific types for field indices and values. It demonstrates the functionality of the core. It has to be noted however, that wrapper is not necessary to use Hackcell, but provides useful functionality. Some of these modules can be used without another wrapper module, like Numbers or DSL, but others, like NumberList and NumberTable, depend on other wrapper modules to do their computations.
 	\subsubsection{Numbers}
-	Numbers provide a datatype that can be used as a value to store \textit{Int} and \textit{Double} values in a spreadsheet. Number also provide the basic operations addition, subtraction, multiplication and division. It is not yet possible to combine a \textit{Int} and \textit{Double} value in one operation.
+	Numbers provide a datatype that can be used as a value to store \texttt{Int} and \texttt{Double} values in a spreadsheet. Number also provide the basic operations addition, subtraction, multiplication and division. It is not yet possible to combine a \texttt{Int} and \texttt{Double} value in one operation.
 	\subsubsection{NumberList \& NumberTable}	
 	NumberList and NumberTable provide respectably a 1-dimensional and 2-dimensional spreadsheet that uses the values and operations from Numbers. They also provide the functionality of creating a spreadsheet from a 1-dimensional or 2-dimensional list of expressions. Normally, the user has to provide at which field an expression need to be, but in this case, all expressions are placed in fields that are sequential, starting from 0.
 \subsubsection{DSL}
-	The DSL provides functionality for easily executing the wrapper by creating the necessary states. It allows users to place values at specific fields and construct a spreadsheet, given a \textit{Map} of fields and expressions and a handler.
+	The DSL provides functionality for easily executing the wrapper by creating the necessary states. It allows users to place values at specific fields and construct a spreadsheet, given a \texttt{Map} of fields and expressions and a handler.
 	
 	\section{Timeline}
 	This is the original schedule. We are still on schedule, so we do not need to change it. \\
