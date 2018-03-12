@@ -15,9 +15,9 @@
 \begin{document}
 	\maketitle
 	\section{Main Data Types and Techniques}
-	Our project is split in two parts: the core, which implements a generic interface to work with spreadsheets and a wrapper, which is not generic but practically demonstrates the functionality of the core and will become a simple spreadsheet application.
+	Our project is split in two parts: the core, which implements a generic interface to work with spreadsheets, and a wrapper, which is not generic but practically demonstrates the functionality of the core and will become a simple spreadsheet application.
 	
-	In the core we implement the data types, where we do not specify what the data type of the field, the values and the errors should be. The implementation should specify this further, e.g. \texttt{(Int, Int)} for fields, \texttt{Double} for values, and custom data type for errors.
+	In the core we implement the data types, where we do not specify what the types of the field, the values and the errors should be. The implementation should specify this further, e.g. \texttt{(Int, Int)} for fields, \texttt{Double} for values, and custom data type for errors.
 	
 	All the data types that are used in the core can be found in listing \ref{listing:datatypes}. \texttt{Spreadsheet} is used to initialize the \texttt{HackcellState}. The \texttt{HackcellState} saves the expressions and results of all the fields. It also contains a function \texttt{app}, where all the functions that can be used in the spreadsheet should be defined. \texttt{App} takes a String argument that identifies the function.
 	
