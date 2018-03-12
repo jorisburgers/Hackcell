@@ -8,16 +8,25 @@ import Control.Monad.Except
 
 import qualified Data.Map as M
 
-createHackcel :: Spreadsheet field value error -> App field value error -> HackcelState field value error
+-- | Initializes a spreadsheet.
+createHackcel :: Spreadsheet field value error -- ^ The spreadsheet
+              -> App field value error         -- ^ The handler function that handles function applications
+              -> HackcelState field value error
 createHackcel (Spreadsheet sheet) app = HackcelState (fmap (, Nothing) sheet) app
 
+-- | Reports an error in the eval monad.
+--   The error will be shown in the current field.
 tError :: error -> Eval field value error return
 tError =  Eval . throwError
 
+-- | Returns the value of an argument if it is a value.
+--   It reports an error if a range was passed instead of a value.
 expectValue :: HackcelError error field => Argument field value error -> Eval field value error value
 expectValue (AValue e)   = e
 expectValue (ARange _ _) = tError errorExpectedValueGotRange
 
+-- | Returns the range of an argument if it is a range.
+--   It reports an error if a value was passed instead of a range.
 expectRange :: HackcelError error field => Argument field value error -> Eval field value error (field, field)
 expectRange (AValue _)   = tError errorExpectedRangeGotValue
 expectRange (ARange a b) = return (a, b)
