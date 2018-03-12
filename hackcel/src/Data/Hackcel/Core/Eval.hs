@@ -62,7 +62,7 @@ data Argument field value error
 
 -- TODO: Document the following functions after implementing dependency tracking
 getValue :: (HackcelError error field, Ord field) => field
-
+         -> Eval field value error value
 getValue f = Eval $
   do
     s <- get
@@ -85,7 +85,7 @@ evalExpression fld = Eval $
       Just (expr, _) ->
         do
           -- Add field to the stack, throws error when already in stack
-          runEvalState $ updateStack fld
+          runEvalState $ pushStack fld
           -- Get the result (might go into another evalExpression call)
           tres <- runEvalState (evalExpr' expr)
           -- Remove field from the stack again
@@ -114,9 +114,9 @@ evalExpression fld = Eval $
     toArgument (PRange fld1 fld2) = ARange fld1 fld2
     toArgument (PExpr e)      = AValue $ evalExpr' e
 
-    updateStack :: (HackcelError error field, Ord field) => field
+    pushStack :: (HackcelError error field, Ord field) => field
                 -> Eval field value error ()
-    updateStack fld2 = Eval $
+    pushStack fld2 = Eval $
       do
         s <- get
         let EvalState { esStack = stack } =  s
