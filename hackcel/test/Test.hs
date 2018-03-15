@@ -2,6 +2,19 @@ module Main where
 
 import Test.Tasty
 
+import NumberListTests
+import NumberTableTests
+
 main = defaultMain tests
 
-tests = testGroup "Tests" []
+tests = testGroup "Tests" [
+        properties, 
+        unitTests
+    ]
+
+properties = testGroup "Properties" [
+        numberListProperties,
+        numberTableProperties
+    ]
+
+unitTests = testGroup "Unit tests" []

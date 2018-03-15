@@ -16,15 +16,23 @@ data NumberError    = RecursionError String
                     | DivideByZeroError String
                     | ErrorUnexpectedValue
                     | ErrorUnexpectedRange
-                    deriving (Show)
+                    deriving (Show, Eq)
 
 type Eval' field = Eval field Value NumberError Value
 
 valueDouble :: Double -> Expression field Value NumberError 
 valueDouble = ExprLit . ValDouble 
 
+fromValueDouble :: Value -> Double
+fromValueDouble (ValDouble x)   = x
+fromValueDouble _               = error "Value is not a Double"
+
 valueInt :: Int -> Expression field Value NumberError 
 valueInt = ExprLit . ValInt 
+
+fromValueInt :: Value -> Int
+fromValueInt (ValInt x) = x
+fromValueInt _          = error "Value is not an Int"
 
 op :: String -> [Expression field Value NumberError] -> Expression field Value NumberError 
 op name es = ExprApp name $ map PExpr es
