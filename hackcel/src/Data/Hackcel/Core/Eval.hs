@@ -1,6 +1,7 @@
-{-# language MultiParamTypeClasses, FlexibleContexts, GeneralizedNewtypeDeriving, FunctionalDependencies #-}
+{-# language MultiParamTypeClasses, FlexibleContexts, GeneralizedNewtypeDeriving #-}
 
-module Data.Hackcel.Core.Eval (Eval(..), App, HackcelState(..), runField, Argument(..), getValue) where
+module Data.Hackcel.Core.Eval (Eval(..), App, HackcelState(..), runField
+                              , Argument(..), getValue, calcAll) where
 
 import Control.Monad
 import qualified Data.Map.Strict as M
@@ -52,6 +53,29 @@ runField f hackcel = (result, finalHackcel)
   where
     initial = EvalState hackcel f []
     (result, EvalState finalHackcel _ _) = runEval (evalExpression f) initial
+
+-- | Very ugly function, that calculates all results of all the expressions
+calcAll :: (HackcelError error field, Ord field) => HackcelState field value error
+        -> HackcelState field value error
+calcAll s = case allFields of
+  []  -> s
+  f:_ -> helper f allFields
+  where
+    allFields = M.keys $ fields s
+    initial f = EvalState s f []
+
+    getAll :: (HackcelError error field, Ord field) => [field] -> Eval field value error ()
+    getAll fs = Eval $ mapM_ (runEvalState.getValue') fs
+
+    -- To make sure the calculations continues, even if one field has an error.
+    getValue' f = Eval $ do (runEvalState.getValue) f; return ()
+                         `catchError` \_ -> return ()
+
+    helper f fs = finalHackcel
+      where
+        (_, EvalState finalHackcel _ _) = runEval (getAll fs) (initial f)
+
+
 
 -- | Represents an argument of a function application. Can either be a normal value
 --   or a range.
@@ -167,3 +191,26 @@ dependencies field = Eval $ do
                         let FieldResult { fieldDependants = depends } = fr
                         return depends
   -- TODO: Do ExprLetIn
+
+{- If we want to embed the IO monad, we need underlying code. Up for discussion.
+-- | The Eval monad is used to evaluate a field. It keeps track of errors that occur during the calculation,
+--   feeds the dependency tracking and it can detect cyclic references.
+newtype Eval field value error a = Eval {
+  runEvalState :: ExceptT error (StateT (EvalState field value error) IO) a
+} deriving (Monad, Functor, Applicative)
+
+-- | Runs a calculation in the Eval monad.
+runEval :: Eval field value e a -> EvalState field value e
+         -> IO (Either e a, EvalState field value e)
+runEval = runStateT . runExceptT . runEvalState
+
+-- | Given a HackcelState and field, calculates the value of the specified field.
+--   Results are memoized and stored in the returned HackcelState.
+runField :: (HackcelError error field, Ord field) => field
+        -> HackcelState field value error
+        -> IO (Either error value, HackcelState field value error)
+runField f hackcel = do (r, EvalState finalHackcel _ _) <- runEval (evalExpression f) initial
+                        return (r, finalHackcel)
+  where
+    initial = EvalState hackcel f []
+-}

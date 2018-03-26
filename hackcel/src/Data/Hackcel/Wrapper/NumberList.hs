@@ -11,6 +11,7 @@ import Data.Hackcel.Wrapper.DSL
 
 import Data.Either
 import Data.Map.Strict hiding (foldl, map, foldr)
+import Text.Read
 
 data Field = FieldInt Int
             deriving (Eq, Ord)
@@ -64,4 +65,7 @@ spreadSheet = createHackcel (Spreadsheet $ fromList (values ++ computations)) nu
 expressions = [valueInt 3, valueInt 5, valueInt 7, op "plus" [fieldExpr 2, fieldExpr 0], valueDouble 3.5]
 
 foundValues :: [Either NumberError Value]
-foundValues = fst $ getValues (map field [0..14]) spreadSheet 
+foundValues = fst $ getValues (map field [0..14]) spreadSheet
+
+intParser :: String -> Maybe Field
+intParser s = FieldInt <$> readMaybe s

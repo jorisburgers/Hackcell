@@ -43,3 +43,35 @@ prettyprint hackcel = foldr printField "" $ M.toAscList allFields
 
 prettyprinter :: (Show field, Show value, Show error) => HackcelState field value error -> IO ()
 prettyprinter = putStrLn . prettyprint
+
+interactive :: (Show field, Show value, Show error, HackcelError error field
+               , Ord field) => HackcelState field value error -> (String -> Maybe field) -> IO ()
+interactive state pField = do  help
+                               mainProgram state
+  where
+    -- mainProgram :: (Show field, Show value, Show error, HackcelError error field
+    --                , Ord field) => HackcelState field value error -> IO ()
+    mainProgram s = do
+      arg <- getLine
+      case arg of
+        "h" -> do help; mainProgram s
+        "p" -> do prettyprinter s; mainProgram s
+        "q" -> return ()
+        "e a" -> do let news = calcAll s
+                    prettyprinter news
+                    mainProgram news
+        'e':' ':rest -> case pField rest of
+                          Just x -> do let (_, news) = runField x s
+                                       prettyprinter news
+                                       mainProgram news
+                          Nothing -> do putStrLn $ "Cannot parse " ++ rest ++ " into a field"
+                                        mainProgram s
+        _   -> do putStrLn "Unkown argument"; mainProgram s
+
+    help :: IO ()
+    help = putStrLn "Welcome to the interactive HackCell shell.\n\
+                    \Commands: 'h' for this helper\n\
+                    \          'p' to print\n\
+                    \          'q' to quit\n\
+                    \          'e [field]' to evaluate a field\n\
+                    \          'e a' to evaluate all fields"
