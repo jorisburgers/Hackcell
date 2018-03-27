@@ -27,7 +27,7 @@ instance Show Field where
 
 instance HackcelError NumberError Field where
     errorUnknownField field = UnknownFieldError $ "Unknown field error at index " ++ show field
-    errorRecursion fields   = RecursionError $ "Circular referencing via " ++ concatMap show fields  
+    errorRecursion fields   = RecursionError $ "Circular referencing via " ++ concatMap show fields
     errorExpectedValueGotRange = ErrorUnexpectedValue
     errorExpectedRangeGotValue = ErrorUnexpectedRange
 
@@ -35,8 +35,8 @@ listToSpreadSheet :: [Expression Field Value NumberError] -> HackcelState Field 
 listToSpreadSheet xs = createHackcel (Spreadsheet $ fromList fields) numberHandler
                     where
                         fields :: [(Field, Expression Field Value NumberError)]
-                        fields = map (\(x, i) -> x @@ field i) $ 
-                                    fst $ foldl (\x y -> (fst x ++ [(y, snd x)], snd x + 1)) ([], 0) xs 
+                        fields = map (\(x, i) -> x @@ field i) $
+                                    fst $ foldl (\x y -> (fst x ++ [(y, snd x)], snd x + 1)) ([], 0) xs
 
 {-
     example call:
@@ -52,12 +52,12 @@ listToSpreadSheet xs = createHackcel (Spreadsheet $ fromList fields) numberHandl
 
 values = map (\x -> valueInt x @@ field x) [0..10]
 
-computations = 
+computations =
     [
         op "plus" [fieldExpr 3, fieldExpr 5] @@ field 11,
         op "plus" [fieldExpr 11, fieldExpr 8] @@ field 12,
         op "divide" [fieldExpr 3, valueInt 0] @@ field 13,
-        op "minus" [valueInt 3, valueInt 5] @@ field 14        
+        op "minus" [valueInt 3, valueInt 5] @@ field 14
     ]
 
 spreadSheet = createHackcel (Spreadsheet $ fromList (values ++ computations)) numberHandler
@@ -69,3 +69,6 @@ foundValues = fst $ getValues (map field [0..14]) spreadSheet
 
 intParser :: String -> Maybe Field
 intParser s = FieldInt <$> readMaybe s
+
+efParser :: String -> Maybe (Field, Expression Field Value NumberError)
+efParser s = Just $ (op "plus" [fieldExpr 3, fieldExpr 5] @@ field 16)

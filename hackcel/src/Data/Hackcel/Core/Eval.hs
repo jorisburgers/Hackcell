@@ -1,7 +1,8 @@
 {-# language MultiParamTypeClasses, FlexibleContexts, GeneralizedNewtypeDeriving #-}
 
 module Data.Hackcel.Core.Eval (Eval(..), App, HackcelState(..), runField
-                              , Argument(..), getValue, calcAll) where
+                              , Argument(..), getValue, calcAll
+                              , insertExpression) where
 
 import Control.Monad
 import qualified Data.Map.Strict as M
@@ -75,7 +76,13 @@ calcAll s = case allFields of
       where
         (_, EvalState finalHackcel _ _) = runEval (getAll fs) (initial f)
 
-
+insertExpression :: (HackcelError error field, Ord field) => HackcelState field value error
+                 -> field -> Expression field value error -> HackcelState field value error
+insertExpression s f e = s {fields = newmap}
+  where
+    oldmap = fields s
+    -- replaces field, if it is allready present.
+    newmap = M.insert f (e, Nothing) oldmap
 
 -- | Represents an argument of a function application. Can either be a normal value
 --   or a range.
@@ -171,6 +178,7 @@ updateResult fld val = Eval $
           let res = Just (FieldResult (Right val) (referencedFields expr))
           let newm = M.insert fld (expr, res) m
           put $ s {esHackcelState = HackcelState newm funcs}
+
 
 -- TODO: This function is probably not needed when we implement dependency tracking.
 referencedFields :: Expression field value error -> [field]
