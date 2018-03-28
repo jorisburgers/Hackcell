@@ -48,10 +48,10 @@ runEval = runState . runExceptT . runEvalState
 runField :: (HackcelError error field, Ord field) => field
         -> HackcelState field value error
         -> (Either error value, HackcelState field value error)
-runField f hackcel = (result, finalHackcel)
+runField f hackcel = (x, finalHackcel)
   where
     initial = EvalState hackcel f []
-    (result, EvalState finalHackcel _ _) = runEval (evalExpression f) initial
+    (x, EvalState finalHackcel _ _) = runEval (fromFieldResult $ evalExpression [] f) initial
 
 -- | Represents an argument of a function application. Can either be a normal value
 --   or a range.
@@ -59,24 +59,35 @@ data Argument field value error
   = AValue (Eval field value error value)
   | ARange field field
 
-
--- TODO: Document the following functions after implementing dependency tracking
+-- | Finds the value of a field.
+--   Returns a memoized value if possible.
 getValue :: (HackcelError error field, Ord field) => field
          -> Eval field value error value
 getValue f = Eval $
   do
-    s <- get
-    let EvalState { esHackcelState = HackcelState m _ } =  s
+    state@EvalState { esHackcelState = HackcelState m app, esField = currentField } <- get
     case M.lookup f m of
       Nothing -> throwError (errorUnknownField f)
+      Just (expr, memoized) -> do
+        FieldResult val dependants <- maybe (runEvalState $ evalExpression [] f) return memoized
+        let dependants' = if currentField `elem` dependants then dependants else currentField : dependants
+        let m' = M.insert f (expr, Just (FieldResult val dependants')) m
+        put state{ esHackcelState = HackcelState m' app }
+        case val of
+          Left e -> throwError e
+          Right x -> return x
+      {-
       Just (expr, Nothing) -> runEvalState $ evalExpression f
-      Just (expr, Just (FieldResult val _)) -> case val of
+      Just (expr, Just (FieldResult val dependants)) -> case val of
         Left e -> throwError e
-        Right x -> return x
+        Right x -> return x -}
 
-evalExpression :: (HackcelError error field, Ord field) => field
-               -> Eval field value error value
-evalExpression fld = Eval $
+-- | Evaluates the expression of some field
+evalExpression :: (HackcelError error field, Ord field)
+               => [field]
+               -> field
+               -> Eval field value error (FieldResult field value error)
+evalExpression dependants fld = Eval $
   do
     s <- get
     let EvalState { esHackcelState = HackcelState m funcs } =  s
@@ -91,14 +102,12 @@ evalExpression fld = Eval $
           -- Remove field from the stack again
           runEvalState popStack
           -- Update the state with the result
-          runEvalState $ updateResult fld tres
-          return tres
-        `catchError` (\e ->
-          do
-            let res = Just $ FieldResult (Left e) []
-            let newm = M.insert fld (expr,res) m
-            put $ s {esHackcelState = HackcelState newm funcs}
-            throwError e)
+          runEvalState $ updateResult dependants fld tres
+        `catchError` (\e -> do
+          let res = FieldResult (Left e) dependants
+          let newm = M.insert fld (expr, Just res) m
+          put $ s {esHackcelState = HackcelState newm funcs}
+          return res)
   where
     evalExpr' :: (HackcelError error field, Ord field)
               => Expression field value error -> Eval field value error value
@@ -107,7 +116,7 @@ evalExpression fld = Eval $
     evalExpr' (ExprApp fld args) = Eval $ do
       s <- get
       let EvalState { esHackcelState = HackcelState m funcs } =  s
-      runEvalState $ funcs fld (Prelude.map toArgument args)
+      runEvalState $ funcs fld (map toArgument args)
 
     toArgument :: (HackcelError error field, Ord field)
                => Parameter field value error -> Argument field value error
@@ -134,36 +143,32 @@ evalExpression fld = Eval $
           []       -> error "This should really not happen, the stack is empty when trying to pop"
           (_:news) -> put $ s {esStack = news}
 
-updateResult :: (HackcelError error field, Ord field) => field
-             -> value -> Eval field value error ()
-updateResult fld val = Eval $
+updateResult :: (HackcelError error field, Ord field)
+             => [field]
+             -> field
+             -> value -> Eval field value error (FieldResult field value error)
+updateResult dependants fld val = Eval $
   do
-    s <- get
-    let EvalState { esHackcelState = HackcelState m funcs } =  s
+    s@EvalState { esHackcelState = HackcelState m funcs } <- get
     case M.lookup fld m of
-      Nothing -> throwError (errorUnknownField fld)
+      Nothing -> error "The impossible happened: updateResult should not be called with a field that does not exist"
       Just (expr, _) ->
         do
-          let res = Just (FieldResult (Right val) (referencedFields expr))
-          let newm = M.insert fld (expr, res) m
+          let res = FieldResult (Right val) dependants
+          let newm = M.insert fld (expr, Just res) m
           put $ s {esHackcelState = HackcelState newm funcs}
+          return res
 
--- TODO: This function is probably not needed when we implement dependency tracking.
-referencedFields :: Expression field value error -> [field]
-referencedFields (ExprField f) = [f]
-referencedFields (ExprLit _) = []
-referencedFields (ExprApp _ _) = []
 
-dependencies :: (HackcelError error field, Ord field) => field
-             -> Eval field value error [field]
-dependencies field = Eval $ do
-          s <- get
-          let EvalState { esHackcelState = HackcelState m funcs } =  s
-          case M.lookup field m of
-            Nothing -> throwError (errorUnknownField field)
-            Just (expr, Nothing) -> return []
-            Just (expr, Just fr) ->
-                        do
-                        let FieldResult { fieldDependants = depends } = fr
-                        return depends
-  -- TODO: Do ExprLetIn
+catchErrorEval :: Eval field value error a -> (error -> Eval field value error a) -> Eval field value error a
+catchErrorEval try catch = Eval $ runEvalState try `catchError` (runEvalState . catch)
+
+toFieldResult :: [field] -> Eval field value error value -> Eval field value error (FieldResult field value error)
+toFieldResult dependants e = (e >>= (\x -> return $ FieldResult (Right x) dependants)) `catchErrorEval` (\err -> return $ FieldResult (Left err) dependants)
+
+fromFieldResult :: Eval field value error (FieldResult field value error) -> Eval field value error value
+fromFieldResult e = do
+  FieldResult x _ <- e
+  case x of
+    Left err -> Eval $ throwError err
+    Right value -> return value
