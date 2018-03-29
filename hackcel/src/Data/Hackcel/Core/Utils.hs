@@ -44,43 +44,23 @@ prettyprint hackcel = foldr printField "" $ M.toAscList allFields
 prettyprinter :: (Show field, Show value, Show error) => HackcelState field value error -> IO ()
 prettyprinter = putStrLn . prettyprint
 
-interactive :: (Show field, Show value, Show error, HackcelError error field
-               , Ord field) => HackcelState field value error -> (String -> Maybe field)
-            -> (String -> Maybe (field, Expression field value error)) -> IO ()
-interactive state pField pExpr = do help
-                                    mainProgram state
+-- | Very ugly function, that calculates all results of all the expressions
+evalAll :: (HackcelError error field, Ord field) => HackcelState field value error
+        -> HackcelState field value error
+evalAll s = case allFields of
+  []  -> s
+  f:_ -> helper f allFields
   where
-    -- mainProgram :: (Show field, Show value, Show error, HackcelError error field
-    --                , Ord field) => HackcelState field value error -> IO ()
-    mainProgram s = do
-      arg <- getLine
-      case arg of
-        "h" -> do help; mainProgram s
-        "p" -> do prettyprinter s; mainProgram s
-        "q" -> return ()
-        "e a" -> do let news = calcAll s
-                    prettyprinter news
-                    mainProgram news
-        'e':' ':rest -> case pField rest of
-                          Just x -> do let (_, news) = runField x s
-                                       prettyprinter news
-                                       mainProgram news
-                          Nothing -> do putStrLn $ "Cannot parse " ++ rest ++ " into a field"
-                                        mainProgram s
-        'i':' ':rest -> case pExpr rest of
-                         Just (f, e) -> do let news = insertExpression s f e
-                                           prettyprinter news
-                                           mainProgram news
-                         Nothing -> do putStrLn $ "Cannot parse " ++ rest ++ " into an expression"
-                                       mainProgram s
-        _   -> do putStrLn "Unkown argument"; mainProgram s
+    allFields = M.keys $ fields s
+    initial f = EvalState s f []
 
-    help :: IO ()
-    help = putStrLn
-          "Welcome to the interactive HackCell shell.\n\
-          \Commands: 'h' for this helper\n\
-          \          'p' to print\n\
-          \          'q' to quit\n\
-          \          'e [field]' to evaluate a field\n\
-          \          'e a' to evaluate all fields\n\
-          \          'i [expression]@@[field]' to insert an expression at a field"
+    getAll :: (HackcelError error field, Ord field) => [field] -> Eval field value error ()
+    getAll fs = Eval $ mapM_ (runEvalState.getValue') fs
+
+    -- To make sure the calculations continues, even if one field has an error.
+    getValue' f = Eval $ do (runEvalState.getValue) f; return ()
+                         `catchError` \_ -> return ()
+
+    helper f fs = finalHackcel
+      where
+        (_, EvalState finalHackcel _ _) = runEval (getAll fs) (initial f)

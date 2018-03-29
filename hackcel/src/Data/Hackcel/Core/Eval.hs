@@ -1,7 +1,7 @@
 {-# language MultiParamTypeClasses, FlexibleContexts, GeneralizedNewtypeDeriving #-}
 
-module Data.Hackcel.Core.Eval (Eval(..), App, HackcelState(..), runField
-                              , Argument(..), getValue, calcAll
+module Data.Hackcel.Core.Eval (Eval(..), App, HackcelState(..), EvalState(..), runField
+                              , Argument(..), getValue, runEval
                               , insertExpression) where
 
 import Control.Monad
@@ -54,27 +54,6 @@ runField f hackcel = (result, finalHackcel)
   where
     initial = EvalState hackcel f []
     (result, EvalState finalHackcel _ _) = runEval (evalExpression f) initial
-
--- | Very ugly function, that calculates all results of all the expressions
-calcAll :: (HackcelError error field, Ord field) => HackcelState field value error
-        -> HackcelState field value error
-calcAll s = case allFields of
-  []  -> s
-  f:_ -> helper f allFields
-  where
-    allFields = M.keys $ fields s
-    initial f = EvalState s f []
-
-    getAll :: (HackcelError error field, Ord field) => [field] -> Eval field value error ()
-    getAll fs = Eval $ mapM_ (runEvalState.getValue') fs
-
-    -- To make sure the calculations continues, even if one field has an error.
-    getValue' f = Eval $ do (runEvalState.getValue) f; return ()
-                         `catchError` \_ -> return ()
-
-    helper f fs = finalHackcel
-      where
-        (_, EvalState finalHackcel _ _) = runEval (getAll fs) (initial f)
 
 insertExpression :: (HackcelError error field, Ord field) => HackcelState field value error
                  -> field -> Expression field value error -> HackcelState field value error
