@@ -46,7 +46,7 @@ singleValueProperty unF f x y = (unF valueF) == x
 singleIntValueProperty = testProperty "Single int insertion and retrieval" $ singleValueProperty fromValueInt valueInt
 
 -- Test the insertion of a Double
-singleDoubleValueProperty = testProperty "Single int insertion and retrieval" $ singleValueProperty fromValueDouble valueDouble
+singleDoubleValueProperty = testProperty "Single double insertion and retrieval" $ singleValueProperty fromValueDouble valueDouble
 
 -- Verifies that an operation gives the correct result
 operationProperty :: (Eq a) => (a -> a -> a) -> String -> (Value -> a) -> (a -> Expression Field Value NumberError) -> a -> a -> Int -> Bool
@@ -77,4 +77,3 @@ errorProperty opName errExp f x y z = errGiv == errExp
                                 result = runField (field z) spreadSheet
                                 spreadSheet :: HackcelState Field Value NumberError
                                 spreadSheet = createSpreadSheet [op opName [f x, f y] @@ field z]
-
