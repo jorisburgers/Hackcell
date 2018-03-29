@@ -43,3 +43,24 @@ prettyprint hackcel = foldr printField "" $ M.toAscList allFields
 
 prettyprinter :: (Show field, Show value, Show error) => HackcelState field value error -> IO ()
 prettyprinter = putStrLn . prettyprint
+
+-- | Very ugly function, that calculates all results of all the expressions
+evalAll :: (HackcelError error field, Ord field) => HackcelState field value error
+        -> HackcelState field value error
+evalAll s = case allFields of
+  []  -> s
+  f:_ -> helper f allFields
+  where
+    allFields = M.keys $ fields s
+    initial f = EvalState s f []
+
+    getAll :: (HackcelError error field, Ord field) => [field] -> Eval field value error ()
+    getAll fs = Eval $ mapM_ (runEvalState.getValue') fs
+
+    -- To make sure the calculations continues, even if one field has an error.
+    getValue' f = Eval $ do (runEvalState.getValue) f; return ()
+                         `catchError` \_ -> return ()
+
+    helper f fs = finalHackcel
+      where
+        (_, EvalState finalHackcel _ _) = runEval (getAll fs) (initial f)
