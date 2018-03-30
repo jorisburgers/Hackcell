@@ -19,3 +19,6 @@ data FieldResult field value error = FieldResult
   { fieldValue :: Either error value
   , fieldDependants :: [field]
   }
+
+instance Show (FieldResult field value error) where
+  show = undefined
