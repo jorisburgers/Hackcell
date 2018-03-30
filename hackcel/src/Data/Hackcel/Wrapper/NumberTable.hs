@@ -52,8 +52,8 @@ expressions = [
             ]
 
 
-testSpreadshheet :: HackcelState Field Value NumberError
-testSpreadshheet = listToSpreadSheet expressions
+testSpreadsheet :: HackcelState Field Value NumberError
+testSpreadsheet = listToSpreadSheet expressions
 
 data InterActiveState = InterActiveState {
                           hstate :: Maybe (HackcelState Field Value NumberError)
@@ -74,14 +74,14 @@ printNumberTable ias = maybe "" (render.printer) curstate
         ) // char ' ' // text ( curExpr state)
 
     curExpr state = case M.lookup curField (fields state) of
-                       Just (e,v) -> show curField ++ ": $ " ++ show e
-                       Nothing    -> ""
+                       Just (e,v) -> show curField ++ " = " ++ show e
+                       Nothing    -> show curField ++ " = "
 
     helper :: HackcelState Field Value NumberError -> Int -> Int -> Box
     helper state i j = let f = FieldInt (i + l,j + t) in
       case M.lookup f (fields state) of
-        Just (e,v) -> boxprinter f (Just v)
-        Nothing    -> boxprinter f (Nothing :: Maybe Field)
+        Just (e, Just v) -> boxprinter f (Just v)
+        _          -> boxprinter f (Nothing :: Maybe Field)
 
     columnname = foldr (\i b -> char '|' <> (text.printname) (i + l) <> b) nullBox [0..9]
     rowname = foldl (\b i -> b // (text.printname) (i + l) // text (replicate 8 '-'))
@@ -115,7 +115,9 @@ interface = do setTitle "HackCell: the Spreadsheet program in Haskell"
       case arg of
          'h':_ -> do refresh; help; mainProgram
          'q':_ -> return ()
-         'l':fn -> do put (s {hstate = Just testSpreadshheet}); refresh; mainProgram
+         'l':fn -> do let newSH = evalAll testSpreadsheet
+                      put (s {hstate = Just newSH})
+                      refresh; mainProgram
          'w':_ -> do moveField (0,-1); refresh; mainProgram
          's':_ -> do moveField (0,1); refresh; mainProgram
          'a':_ -> do moveField (-1,0); refresh; mainProgram

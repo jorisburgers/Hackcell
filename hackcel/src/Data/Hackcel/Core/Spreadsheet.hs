@@ -20,5 +20,7 @@ data FieldResult field value error = FieldResult
   , fieldDependants :: [field]
   }
 
-instance Show (FieldResult field value error) where
-  show = undefined
+instance (Show error, Show value) => Show (FieldResult field value error) where
+  show x = case fieldValue x of
+            Left l -> show l
+            Right r -> show r 
