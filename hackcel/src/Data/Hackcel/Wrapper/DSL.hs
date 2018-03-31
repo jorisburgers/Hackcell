@@ -16,6 +16,16 @@ getValues (x:xs) h = (val : rest, h'')
     (val, h') = runField x h
     (rest, h'') = getValues xs h'
 
+class FieldRange field where
+    getRange :: field -> field -> [field]
+
+class TypeEq value where
+    typeEq :: value -> value -> Bool
+
+isUniformType :: (TypeEq value) => [value] -> Bool
+isUniformType [] = True
+isUniformType (x:xs) = all (x `typeEq`) xs
+
 {-= valuesHelper xs es []
                     where 
                         valuesHelper    :: (HackcelError error field, Ord field) 

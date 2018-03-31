@@ -18,6 +18,9 @@ field = FieldInt
 fieldExpr :: (Int, Int) -> Expression Field Value NumberError
 fieldExpr = ExprField . field
 
+fieldParam :: (Int, Int) -> Parameter Field Value NumberError
+fieldParam = PExpr . fieldExpr
+
 instance Show Field where
     show (FieldInt n) = show n
 
@@ -26,6 +29,10 @@ instance HackcelError NumberError Field where
     errorRecursion fields   = RecursionError $ "Circular referencing via " ++ concatMap show fields  
     errorExpectedValueGotRange = ErrorUnexpectedValue
     errorExpectedRangeGotValue = ErrorUnexpectedRange
+
+instance FieldRange Field where
+    getRange (FieldInt (x1, y1)) (FieldInt (x2, y2)) = [FieldInt (x, y)  | x <- [(min x1 x2)..(max x1 x2)]
+                                                                , y <- [(min y1 y2) .. (max y1 y2)]]
 
 listToSpreadSheet :: [[Expression Field Value NumberError]] -> HackcelState Field Value NumberError
 listToSpreadSheet xss   | not (sameLengths xss) = error "multidimensionale array not all the same size"
@@ -44,5 +51,6 @@ listToSpreadSheet xss   | not (sameLengths xss) = error "multidimensionale array
 
 expressions = [
                 [valueInt 3, valueInt 5, valueInt 7], 
-                [op "plus" [fieldExpr (0,2), valueInt 3], valueDouble 3.5, valueInt 6]
+                [op "plus" [fieldParam (0,2), PExpr $ valueInt 3], valueInt 6, valueDouble 3.5],
+                [valueInt 1, valueInt 2, op "sum" [PRange (field (0, 0)) (field (2, 1))]]
             ]
