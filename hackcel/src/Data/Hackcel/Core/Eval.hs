@@ -1,6 +1,6 @@
 {-# language MultiParamTypeClasses, FlexibleContexts, GeneralizedNewtypeDeriving #-}
 
-module Data.Hackcel.Core.Eval (Eval(..), Apply, HackcelState(..), EvalState(..), runField
+module Data.Hackcel.Core.Eval (Eval(..), Apply, apply, HackcelState(..), EvalState(..), runField
                               , Argument(..), getValue, runEval
                               , insertExpression) where
 
@@ -16,7 +16,7 @@ import Data.List (intercalate)
 
 -- | Handles function applications in expressions of the spreadsheet.
 class Apply field value error app where
-  apply :: app -> [Argument field value error a] -> Eval field value error a value
+  apply :: app -> [Argument field value error app] -> Eval field value error app value
 
 -- | The state of a Hackcel spreadsheet.
 data HackcelState field value error app = HackcelState

@@ -18,63 +18,72 @@ data NumberError    = RecursionError String
                     | ErrorUnexpectedRange
                     deriving (Show, Eq)
 
-type Eval' field = Eval field Value NumberError Value
+data Fns
+    = Plus
+    | Minus
+    | Times
+    | Divide
+    deriving (Eq, Show, Ord)
 
-valueDouble :: Double -> Expression field Value NumberError
+type Eval' field = Eval field Value NumberError Fns Value
+
+valueDouble :: Double -> Expression field Value NumberError Fns
 valueDouble = ExprLit . ValDouble
 
 fromValueDouble :: Value -> Double
 fromValueDouble (ValDouble x)   = x
+-- TODO: Error in the Eval monad
 fromValueDouble _               = error "Value is not a Double"
 
-valueInt :: Int -> Expression field Value NumberError
+valueInt :: Int -> Expression field Value NumberError Fns
 valueInt = ExprLit . ValInt
 
 fromValueInt :: Value -> Int
 fromValueInt (ValInt x) = x
 fromValueInt _          = error "Value is not an Int"
 
-op :: String -> [Expression field Value NumberError] -> Expression field Value NumberError
+op :: Fns -> [Expression field Value NumberError Fns] -> Expression field Value NumberError Fns
 op name es = ExprApp name $ map PExpr es
 
-intOpHandler :: (Int -> Int -> Eval field Value NumberError Int) -> [Value] -> Eval field Value NumberError Value
+intOpHandler :: (Int -> Int -> Eval field Value NumberError Fns Int) -> [Value] -> Eval field Value NumberError Fns Value
 intOpHandler op [ValInt x, ValInt y] = fmap ValInt (op x y)
 
-doubleOpHandler :: (Double -> Double -> Eval field Value NumberError Double) -> [Value] -> Eval field Value NumberError Value
+doubleOpHandler :: (Double -> Double -> Eval field Value NumberError Fns Double) -> [Value] -> Eval field Value NumberError Fns Value
 doubleOpHandler op [ValDouble x, ValDouble y] = fmap ValDouble (op x y)
 
 
-intNameOp :: [(String, Int -> Int -> Eval field Value NumberError Int)]
+intNameOp :: [(Fns, Int -> Int -> Eval field Value NumberError Fns Int)]
 intNameOp  = [
-    ("plus", \x y -> return (x + y)),
-    ("minus", \x y -> return (x - y)),
-    ("times", \x y -> return (x * y)),
-    ("divide", intDivision)]
+    (Plus, \x y -> return (x + y)),
+    (Minus, \x y -> return (x - y)),
+    (Times, \x y -> return (x * y)),
+    (Divide, intDivision)]
 
-doubleNameOp :: [(String, Double -> Double -> Eval field Value NumberError Double)]
+doubleNameOp :: [(Fns, Double -> Double -> Eval field Value NumberError Fns Double)]
 doubleNameOp  = [
-    ("plus", \x y -> return (x + y)),
-    ("minus", \x y -> return (x - y)),
-    ("times", \x y -> return (x * y)),
-    ("divide", doubleDivision)]
+    (Plus, \x y -> return (x + y)),
+    (Minus, \x y -> return (x - y)),
+    (Times, \x y -> return (x * y)),
+    (Divide, doubleDivision)]
 
 
 
-intDivision :: Int -> Int -> Eval field Value NumberError Int
+intDivision :: Int -> Int -> Eval field Value NumberError Fns Int
 intDivision x y |  y == 0 = tError $ DivideByZeroError "div 0" -- throw error
                 |  otherwise = return $ x `div` y
 
 
 
-doubleDivision :: Double -> Double -> Eval field Value NumberError Double
+doubleDivision :: Double -> Double -> Eval field Value NumberError Fns Double
 doubleDivision x y  |  y == 0 = tError $ DivideByZeroError "div 0"-- throw error
                     |  otherwise = return $ x / y
 
-numberHandler :: (HackcelError NumberError field) => String -> [Argument field Value NumberError] -> Eval field Value NumberError Value
-numberHandler name p = do
-                    x <- expectValue (head p)
-                    y <- expectValue (p !! 1)
-                    case x of
-                        ValInt _    -> intOpHandler (op intNameOp) [x, y]
-                        ValDouble _ -> doubleOpHandler (op doubleNameOp) [x, y]
-                    where op lst = fromJust $ lookup name lst
+instance (HackcelError NumberError field) => Apply field Value NumberError Fns where
+    apply name p = do
+        -- TODO: Show error if user didn't supply two arguments
+        x <- expectValue (head p)
+        y <- expectValue (p !! 1)
+        let op lst = fromJust $ lookup name lst
+        case x of
+            ValInt _    -> intOpHandler (op intNameOp) [x, y]
+            ValDouble _ -> doubleOpHandler (op doubleNameOp) [x, y]
