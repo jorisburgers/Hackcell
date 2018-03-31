@@ -2,7 +2,7 @@
 
 module Data.Hackcel.Core.Eval (Eval(..), App, HackcelState(..), EvalState(..), runField
                               , Argument(..), getValue, runEval
-                              , insertExpression) where
+                              , set) where
 
 import Control.Monad
 import qualified Data.Map.Strict as M
@@ -17,9 +17,11 @@ import Data.List (intercalate)
 -- | A functions that handles function applications in expressions of the spreadsheet.
 type App field value error = String -> [Argument field value error] -> Eval field value error value
 
+type FieldsMap field value error = M.Map field (Expression field value error, Maybe (FieldResult field value error))
+
 -- | The state of a Hackcel spreadsheet.
 data HackcelState field value error = HackcelState
-  { fields :: M.Map field (Expression field value error, Maybe (FieldResult field value error))
+  { fields :: FieldsMap field value error
   -- ^ The fields of the spreadsheet, with their value or error and their dependencies.
   , app :: App field value error
   -- ^ The handler for function applications
@@ -55,13 +57,29 @@ runField f hackcel = (x, finalHackcel)
     initial = EvalState hackcel f []
     (x, EvalState finalHackcel _ _) = runEval (fromFieldResult $ evalExpression [] f) initial
 
-insertExpression :: (HackcelError error field, Ord field) => HackcelState field value error
-                 -> field -> Expression field value error -> HackcelState field value error
-insertExpression s f e = s {fields = newmap}
+set :: (Ord field)
+    => HackcelState field value error
+    -> field
+    -> Expression field value error -> HackcelState field value error
+set s f e = s {fields = fields''}
   where
-    oldmap = fields s
     -- replaces field, if it is allready present.
-    newmap = M.insert f (e, Nothing) oldmap
+    fields' = M.insert f (e, Nothing) (fields s)
+    fields'' = case M.lookup f (fields s) of
+      -- Invalidate the dependants of this field
+      Just (_, Just (FieldResult _ dependants)) -> foldr (flip invalidate) fields' dependants
+      -- New field, or existing field that was not calculated yet
+      Nothing -> fields'
+
+invalidate :: (Ord field)
+           => FieldsMap field value error
+           -> field
+           -> FieldsMap field value error
+invalidate fields f = case M.lookup f fields of
+  Just (expr, Just (FieldResult _ dependants)) ->
+    let fields' = M.insert f (expr, Nothing) fields
+    in foldr (flip invalidate) fields' dependants
+  _ -> fields -- Field was already invalidated or removed, so we do not need to invalidate anymore
 
 -- | Represents an argument of a function application. Can either be a normal value
 --   or a range.
