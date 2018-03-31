@@ -9,7 +9,10 @@ import Data.Maybe
 
 data Value  = ValInt Int
             | ValDouble Double
-            deriving Show
+
+instance Show Value where
+  show (ValInt x)    = show x
+  show (ValDouble x) = show x
 
 data NumberError    = RecursionError String
                     | UnknownFieldError String
@@ -24,8 +27,8 @@ valueDouble :: Double -> Expression field Value NumberError
 valueDouble = ExprLit . ValDouble
 
 fromValueDouble :: Value -> Double
-fromValueDouble (ValDouble x)   = x
-fromValueDouble _               = error "Value is not a Double"
+fromValueDouble (ValDouble x) = x
+fromValueDouble _             = error "Value is not a Double"
 
 valueInt :: Int -> Expression field Value NumberError
 valueInt = ExprLit . ValInt
