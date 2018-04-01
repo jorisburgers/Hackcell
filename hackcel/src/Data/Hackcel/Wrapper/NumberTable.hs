@@ -52,5 +52,10 @@ listToSpreadSheet xss   | not (sameLengths xss) = error "multidimensionale array
 expressions = [
                 [valueInt 3, valueInt 5, valueInt 7], 
                 [op "plus" [fieldParam (0,2), PExpr $ valueInt 3], valueInt 6, valueDouble 3.5],
-                [valueInt 1, valueInt 2, op "sum" [PRange (field (0, 0)) (field (2, 1))]]
+                [valueInt 1, valueInt 2, op "sum" [PRange (field (0, 0)) (field (2, 1))]],
+                [valueInt 2, valueInt 2, op "lt" [fieldParam (3, 0), (fieldParam (3, 1))]
+
+                ]
             ]
+
+getField f = fst $ runField f (listToSpreadSheet expressions)

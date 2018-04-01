@@ -57,7 +57,7 @@ operationProperty operation opName unF f x y z = (unF valueF) == operation x y
                                 result :: (Either NumberError Value, HackcelState Field Value NumberError)
                                 result = runField (field z) spreadSheet
                                 spreadSheet :: HackcelState Field Value NumberError
-                                spreadSheet = createSpreadSheet [op opName [f x, f y] @@ field z]
+                                spreadSheet = createSpreadSheet [op opName [PExpr $ f x, PExpr $ f y] @@ field z]
 
 -- Tests the different operators
 plusIntPropery = testProperty "Plus Int" (operationProperty (+) "plus" fromValueInt valueInt)
@@ -76,4 +76,4 @@ errorProperty opName errExp f x y z = errGiv == errExp
                                 result :: (Either NumberError Value, HackcelState Field Value NumberError)
                                 result = runField (field z) spreadSheet
                                 spreadSheet :: HackcelState Field Value NumberError
-                                spreadSheet = createSpreadSheet [op opName [f x, f y] @@ field z]
+                                spreadSheet = createSpreadSheet [op opName [PExpr $ f x, PExpr $ f y] @@ field z]

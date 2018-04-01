@@ -7,6 +7,10 @@ import Data.Map.Lazy
 (@@) ::  Expression field value error -> field -> (field, Expression field value error)
 (@@) = flip (,)
 
+
+op :: String -> [Parameter field value error] -> Expression field value error
+op name es = ExprApp name es
+
 getValues   :: (HackcelError error field, Ord field) 
             => [field] -> HackcelState field value error 
             -> ([Either error value], HackcelState field value error)
