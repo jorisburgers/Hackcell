@@ -14,7 +14,7 @@ import Data.Map.Strict
 spreadsheet :: HackcelState Field Value NumberError Fns
 spreadsheet = evalAll $ createHackcel $ Spreadsheet $ fromList
     -- Literals
-  [ ExprLit (ValInt 1) @@ field 1
+  [ ExprLit (ValInt 0) @@ field 1
   , ExprLit (ValInt 2) @@ field 2
   
     -- Formulas
@@ -22,6 +22,9 @@ spreadsheet = evalAll $ createHackcel $ Spreadsheet $ fromList
   , ExprApp Plus [PExpr $ ExprField $ field 2, PExpr $ ExprLit $ ValInt 2] @@ field 12
 
   , ExprApp Plus [PExpr $ ExprField $ field 11, PExpr $ ExprField $ field 12] @@ field 21
+
+  -- Divide by zero
+  , ExprApp Divide [PExpr $ ExprLit $ ValInt 1, PExpr $ ExprField $ field 1] @@ field 25
 
     -- Circular dependency
   {- , ExprField (field 33) @@ field 31
@@ -52,9 +55,12 @@ invalidateTests = testGroup "Invalidate"
     , (field 2, field 12)
     , (field 11, field 21)
     , (field 12, field 21)
+    -- , (field 1, field 25)
+
     -- Indirect
     , (field 1, field 21)
     , (field 2, field 21)
+
     -- Circular dependencies
     , (field 31, field 32)
     , (field 31, field 33)
