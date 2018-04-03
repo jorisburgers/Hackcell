@@ -6,11 +6,11 @@ import Data.List (intercalate)
 
 -- | Represents a parameter of a function application.
 --   A parameter can either be an expression or a range.
-data Parameter field value error
-  = PExpr (Expression field value error)
+data Parameter field value error app
+  = PExpr (Expression field value error app)
   | PRange field field
 
-instance (Show field, Show value, Show error) => Show (Parameter field value error)
+instance (Show field, Show value, Show error, Show app) => Show (Parameter field value error app)
   where
     show (PExpr expr) = show expr
     show (PRange f1 f2) = "[" ++ show f1 ++ ":" ++ show f2 ++ "]"
@@ -31,13 +31,12 @@ class HackcelError t field | t -> field where
   --   but got a value instead.
   errorExpectedRangeGotValue :: t
 
-data Expression field value error
+data Expression field value error app
   = ExprField field
   | ExprLit value
-  | ExprApp String [Parameter field value error]
+  | ExprApp app [Parameter field value error app]
 
-instance (Show field, Show value, Show error) => Show (Expression field value error)
-  where
-    show (ExprField field) = "$" ++ show field
-    show (ExprLit value)   = show value
-    show (ExprApp name ps) = name ++ "(" ++ intercalate "," (map show ps) ++ ")"
+instance (Show field, Show value, Show error, Show app) => Show (Expression field value error app) where
+  show (ExprField field) = "$" ++ show field
+  show (ExprLit value)   = show value
+  show (ExprApp name ps) = show name ++ "(" ++ intercalate "," (map show ps) ++ ")"
