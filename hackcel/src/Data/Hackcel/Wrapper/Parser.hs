@@ -17,11 +17,15 @@ import Text.ParserCombinators.UU.Derived
 pDigit :: Parser Char
 pDigit = pRange ('0', '9')
 
+-- Greedy parser that parses a non empty list.
+pListNonEmpty :: Parser a -> Parser [a]
+pListNonEmpty p = (:) <$> p <*> pList p
+
 pInt :: Parser Int
-pInt = read <$> pList pDigit
+pInt = read <$> pListNonEmpty pDigit
 
 pDecimals :: Parser Double
-pDecimals = (\digits -> read digits / (10 ^^ length digits)) <$> pList pDigit
+pDecimals = (\digits -> read digits / (10 ^^ length digits)) <$> pListNonEmpty pDigit
 
 pNumber :: Parser Value
 pNumber = (\l r -> r l) <$> pInt <*> (pWith <<|> pWithout)
@@ -49,7 +53,7 @@ pField = f <$> pSome pFieldColumnChar <*> pInt
 
 -- Parses an expression of a left associative infix binary operator
 pOperatorLeft :: Parser Fns -> Parser Expression' -> Parser Expression'
-pOperatorLeft token p = (\left right -> right left) <$> p <*> pRight
+pOperatorLeft token p = (\left right -> right left) <$> p <* pSpaces <*> pRight
   where
     pRight :: Parser (Expression' -> Expression')
     pRight = (\fn arg rest left -> rest $ ExprApp fn [PExpr left, PExpr arg]) <$ pSpaces <*> token <* pSpaces <*> p <*> pRight
