@@ -18,4 +18,4 @@ newtype Spreadsheet field value error app = Spreadsheet { unSpreadsheet :: M.Map
 data FieldResult field value error = FieldResult
   { fieldValue :: Either error value
   , fieldDependants :: [field]
-  }
+  } deriving (Eq, Show)
