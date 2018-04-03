@@ -15,7 +15,7 @@ data Field = FieldInt (Int, Int)
 field :: (Int, Int) -> Field
 field = FieldInt
 
-fieldExpr :: (Int, Int) -> Expression Field Value NumberError
+fieldExpr :: (Int, Int) -> Expression Field Value NumberError Fns
 fieldExpr = ExprField . field
 
 instance Show Field where
@@ -23,13 +23,13 @@ instance Show Field where
 
 instance HackcelError NumberError Field where
     errorUnknownField field = UnknownFieldError $ "Unknown field error at index " ++ show field
-    errorRecursion fields   = RecursionError $ "Circular referencing via " ++ concatMap show fields  
+    errorRecursion fields = RecursionError $ "Circular referencing via " ++ concatMap show fields  
     errorExpectedValueGotRange = ErrorUnexpectedValue
     errorExpectedRangeGotValue = ErrorUnexpectedRange
 
-listToSpreadSheet :: [[Expression Field Value NumberError]] -> HackcelState Field Value NumberError
+listToSpreadSheet :: [[Expression Field Value NumberError Fns]] -> HackcelState Field Value NumberError Fns
 listToSpreadSheet xss   | not (sameLengths xss) = error "multidimensionale array not all the same size"
-                        | otherwise             = createHackcel (Spreadsheet $ fromList $ concat $ fields xss 0 0) numberHandler 
+                        | otherwise             = createHackcel (Spreadsheet $ fromList $ concat $ fields xss 0 0) 
                         where
                             sameLengths :: [[a]] -> Bool
                             sameLengths []  = True
@@ -44,5 +44,5 @@ listToSpreadSheet xss   | not (sameLengths xss) = error "multidimensionale array
 
 expressions = [
                 [valueInt 3, valueInt 5, valueInt 7], 
-                [op "plus" [fieldExpr (0,2), valueInt 3], valueDouble 3.5, valueInt 6]
+                [op Plus [fieldExpr (0,2), valueInt 3], valueDouble 3.5, valueInt 6]
             ]

@@ -44,6 +44,7 @@ library
                      , Data.Hackcel.Core.Expression
                      , Data.Hackcel.Core.Spreadsheet
                      , Data.Hackcel.Core.Utils
+                     , Data.Hackcel.Core.Interactive
   -- other-extensions:    
   build-depends:       base >=4 && <5
                       , containers >=0.5.5 && <0.6

@@ -5,9 +5,11 @@ import Data.Hackcel.Core.Eval
 import Data.Hackcel.Core.Expression
 import Data.Hackcel.Core.Utils
 
-interactive :: (Show field, Show value, Show error, HackcelError error field
-               , Ord field) => HackcelState field value error -> (String -> Maybe field)
-            -> (String -> Maybe (field, Expression field value error)) -> IO ()
+interactive :: (Show field, Show value, Show error, Show app, HackcelError error field
+               , Ord field, Apply field value error app)
+            => HackcelState field value error app
+            -> (String -> Maybe field)
+            -> (String -> Maybe (field, Expression field value error app)) -> IO ()
 interactive state pField pExpr = do help
                                     mainProgram state
   where

@@ -4,12 +4,12 @@ module Data.Hackcel.Wrapper.DSL where
 import Data.Hackcel.Core
 import Data.Map.Lazy
 
-(@@) ::  Expression field value error -> field -> (field, Expression field value error)
+(@@) ::  Expression field value error app -> field -> (field, Expression field value error app)
 (@@) = flip (,)
 
-getValues   :: (HackcelError error field, Ord field) 
-            => [field] -> HackcelState field value error 
-            -> ([Either error value], HackcelState field value error)
+getValues   :: (HackcelError error field, Ord field, Apply field value error app) 
+            => [field] -> HackcelState field value error app
+            -> ([Either error value], HackcelState field value error app)
 getValues []     h = ([], h)
 getValues (x:xs) h = (val : rest, h'')
   where
