@@ -115,6 +115,7 @@ pCompare = pOperator token pMultiply
         <|> GT <$ pToken ">"
         <|> GE <$ pToken ">="
         <|> EQ <$ pToken "=="
+        <|> NE <$ pToken "!="
 
 pAnd :: Parser Expression'
 pAnd = pOperatorLeft (And <$ pToken "&&") pCompare
