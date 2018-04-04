@@ -26,11 +26,14 @@ pListNonEmpty p = (:) <$> p <*> pList p
 pInt :: Parser Int
 pInt = read <$> pListNonEmpty pDigit
 
+pBool :: Parser Bool
+pBool = True <$ pToken "true" <<|> False <$ pToken "false"
+
 pDecimals :: Parser Double
 pDecimals = (\digits -> read digits / (10 ^^ length digits)) <$> pListNonEmpty pDigit
 
-pNumber :: Parser Value
-pNumber = (\l r -> r l) <$> pInt <*> (pWith <<|> pWithout)
+pValue :: Parser Value
+pValue = (\l r -> r l) <$> pInt <*> (pWith <<|> pWithout) <<|> ValBool <$> pBool
   where
     pWithout = pReturn ValInt
     pWith = (\dec left -> ValDouble (fromIntegral left + dec)) <$ pSym '.' <*> pDecimals
@@ -68,7 +71,7 @@ pOperator token p = f <$> p <*> ((\fn e -> Just (fn, e)) <$ pSpaces <*> token <*
     f e1 (Just (fn, e2)) = ExprApp fn [PExpr e1, PExpr e2]
 
 pSimple :: Parser Expression'
-pSimple = ExprLit <$> pNumber
+pSimple = ExprLit <$> pValue
       <|> ExprField <$> pField
       <|> pApl
       <|> pSum
