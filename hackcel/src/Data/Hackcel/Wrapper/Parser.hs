@@ -2,6 +2,8 @@
 
 module Data.Hackcel.Wrapper.Parser where
 
+import Prelude hiding (LT, GT, EQ)
+
 import Data.List
 import Data.Maybe
 
@@ -51,6 +53,10 @@ pField = f <$> pSome pFieldColumnChar <*> pInt
   where
     f column row = FieldInt (foldl (\x y -> 1 + x * 26 + y) 0 column, row)
 
+{-
+    | Sum
+    -}
+
 -- Parses an expression of a left associative infix binary operator
 pOperatorLeft :: Parser Fns -> Parser Expression' -> Parser Expression'
 pOperatorLeft token p = (\left right -> right left) <$> p <* pSpaces <*> pRight
@@ -59,11 +65,21 @@ pOperatorLeft token p = (\left right -> right left) <$> p <* pSpaces <*> pRight
     pRight = (\fn arg rest left -> rest $ ExprApp fn [PExpr left, PExpr arg]) <$ pSpaces <*> token <* pSpaces <*> p <*> pRight
         <<|> pReturn id
 
+pOperator :: Parser Fns -> Parser Expression' -> Parser Expression'
+pOperator token p = f <$> p <*> ((\fn e -> Just (fn, e)) <$ pSpaces <*> token <* pSpaces <*> p <<|> pReturn Nothing)
+  where
+    f e1 Nothing = e1
+    f e1 (Just (fn, e2)) = ExprApp fn [PExpr e1, PExpr e2]
+
 pSimple :: Parser Expression'
 pSimple = ExprLit <$> pNumber
       <|> ExprField <$> pField
       <|> pApl
+      <|> pSum
       <|> pToken "(" *> pExpression <* pToken ")"
+
+pNot :: Parser Expression'
+pNot = (\e -> ExprApp Not [PExpr e]) <$ pToken "!" <* pSpaces <*> pNot <<|> pSimple
 
 pApl :: Parser Expression'
 pApl = ExprApp <$> operators <*
@@ -73,8 +89,14 @@ pApl = ExprApp <$> operators <*
     operators = foldr (\ap b -> ap <$ pToken (show ap) <|> b) pFail
       [Plus, Minus, Times, Divide]
 
+pFieldRange :: Parser (Field, Field)
+pFieldRange = (,) <$> pField <*> pField
+
+pSum :: Parser Expression'
+pSum = (\(f1, f2) -> ExprApp Sum [PRange f1 f2]) <$ pToken "Sum" <* pSpaces <* pToken "(" <*> pFieldRange <* pToken ")"
+
 pPlusMinus :: Parser Expression'
-pPlusMinus = pOperatorLeft token pSimple
+pPlusMinus = pOperatorLeft token pNot
   where
     token :: Parser Fns
     token = Plus <$ pToken "+" <|> Minus <$ pToken "-"
@@ -85,8 +107,30 @@ pMultiply = pOperatorLeft token pPlusMinus
     token :: Parser Fns
     token = Times <$ pToken "*" <|> Divide <$ pToken "/"
 
+pCompare :: Parser Expression'
+pCompare = pOperator token pMultiply
+  where
+    token :: Parser Fns
+    token = LT <$ pToken "<"
+        <|> LE <$ pToken "<="
+        <|> GT <$ pToken ">"
+        <|> GE <$ pToken ">="
+        <|> EQ <$ pToken "=="
+
+pAnd :: Parser Expression'
+pAnd = pOperatorLeft (And <$ pToken "&&") pCompare
+
+pOr :: Parser Expression'
+pOr = pOperatorLeft (Or <$ pToken "||") pAnd
+
+pIfThenElse :: Parser Expression'
+pIfThenElse = f <$> pOr <*> ((\e1 e2 -> Just (e1, e2)) <$ pSpaces <* pToken "?" <*> pExpression <* pToken ":" <*> pExpression <<|> pReturn Nothing)
+  where
+    f l Nothing = l
+    f l (Just (e1, e2)) = ExprApp If [PExpr l, PExpr e1, PExpr e2]
+
 pExpression :: Parser Expression'
-pExpression = pSpaces *> pMultiply <* pSpaces
+pExpression = pSpaces *> pIfThenElse <* pSpaces
 
 parseExpression :: String -> (Expression', Bool)
 parseExpression str = (expr, null errors)
