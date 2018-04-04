@@ -25,11 +25,12 @@ spreadsheet = evalAll $ createHackcel $ Spreadsheet $ fromList
 
   -- Divide by zero
   , ExprApp Divide [PExpr $ ExprLit $ ValInt 1, PExpr $ ExprField $ field 1] @@ field 25
+  , ExprField (field 25) @@ field 26
 
-    -- Circular dependency
-  {- , ExprField (field 33) @@ field 31
+  -- Circular dependency
+  , ExprField (field 33) @@ field 31
   , ExprField (field 31) @@ field 32
-  , ExprField (field 32) @@ field 33 -}
+  , ExprField (field 32) @@ field 33
   ]
 
 invalidates :: HackcelState Field Value NumberError Fns -> Field -> Field -> Bool
@@ -55,11 +56,13 @@ invalidateTests = testGroup "Invalidate"
     , (field 2, field 12)
     , (field 11, field 21)
     , (field 12, field 21)
-    -- , (field 1, field 25)
+    , (field 1, field 25)
+    , (field 25, field 26)
 
     -- Indirect
     , (field 1, field 21)
     , (field 2, field 21)
+    , (field 1, field 26)
 
     -- Circular dependencies
     , (field 31, field 32)

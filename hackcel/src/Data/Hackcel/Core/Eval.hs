@@ -12,6 +12,7 @@ import Control.Monad.State.Lazy
 import Data.Hackcel.Core.Spreadsheet
 import Data.Hackcel.Core.Expression
 
+import Data.Maybe (isJust)
 import Data.List (intercalate)
 
 -- | Handles function applications in expressions of the spreadsheet.
@@ -97,22 +98,26 @@ getValue :: (HackcelError error field, Ord field, Apply field value error app)
          -> Eval field value error app value
 getValue f = Eval $
   do
-    state@EvalState { esHackcelState = HackcelState m, esField = currentField } <- get
+    s1@EvalState { esHackcelState = HackcelState m, esField = currentField } <- get
     case M.lookup f m of
       Nothing -> throwError (errorUnknownField f)
       Just (expr, memoized) -> do
+        if isJust memoized then
+          -- Remove old value, to prevent strange behavior in case of circular references
+          put s1{ esHackcelState = HackcelState (M.insert f (expr, Nothing) m ) }
+        else
+          return ()
+
         FieldResult val dependants <- maybe (runEvalState $ evalExpression [] f) return memoized
         let dependants' = if currentField `elem` dependants then dependants else currentField : dependants
-        let m' = M.insert f (expr, Just (FieldResult val dependants')) m
-        put state{ esHackcelState = HackcelState m' }
+
+        EvalState { esHackcelState = HackcelState m' } <- get
+        let m'' = M.insert f (expr, Just (FieldResult val dependants')) m'
+        s <- get
+        put s{ esHackcelState = HackcelState m'' }
         case val of
           Left e -> throwError e
           Right x -> return x
-      {-
-      Just (expr, Nothing) -> runEvalState $ evalExpression f
-      Just (expr, Just (FieldResult val dependants)) -> case val of
-        Left e -> throwError e
-        Right x -> return x -}
 
 -- | Evaluates the expression of some field
 evalExpression :: (HackcelError error field, Ord field, Apply field value error app)
@@ -121,23 +126,26 @@ evalExpression :: (HackcelError error field, Ord field, Apply field value error 
                -> Eval field value error app (FieldResult field value error)
 evalExpression dependants fld = Eval $
   do
-    s <- get
-    let EvalState { esHackcelState = HackcelState m } =  s
+    EvalState { esHackcelState = HackcelState m } <- get
     case M.lookup fld m of
       Nothing -> throwError (errorUnknownField fld)
       Just (expr, _) ->
         do
           -- Add field to the stack, throws error when already in stack
-          runEvalState $ pushStack fld
+          oldField <- runEvalState $ pushStack fld
           -- Get the result (might go into another evalExpression call)
           tres <- runEvalState (evalExpr' expr)
           -- Remove field from the stack again
-          runEvalState popStack
+          runEvalState $ popStack oldField
           -- Update the state with the result
           runEvalState $ updateResult dependants fld tres
         `catchError` (\e -> do
-          let res = FieldResult (Left e) dependants
-          let newm = M.insert fld (expr, Just res) m
+          s@EvalState{ esHackcelState = HackcelState m'} <- get
+          let additionalDeps = case M.lookup fld m' of
+                                Just (_, Just (FieldResult r deps)) -> deps -- Circular reference, dependants are already set
+                                _ -> []
+          let res = FieldResult (Left e) (additionalDeps ++ dependants)
+          let newm = M.insert fld (expr, Just res) m'
           put $ s {esHackcelState = HackcelState newm}
           return res)
   where
@@ -156,24 +164,25 @@ evalExpression dependants fld = Eval $
     toArgument (PExpr e)      = AValue $ evalExpr' e
 
     pushStack :: (HackcelError error field, Ord field) => field
-                -> Eval field value error app ()
+                -> Eval field value error app field
     pushStack fld2 = Eval $
       do
-        s <- get
-        let EvalState { esStack = stack } =  s
+        s@EvalState { esStack = stack, esField = fld1 } <- get
         if fld2 `elem` stack
           then throwError (errorRecursion stack)
-          else put $ s {esStack = fld2 : stack}
+          else do
+            put $ s {esStack = fld2 : stack, esField = fld2}
+            return fld1
 
     popStack :: (HackcelError error field, Ord field)
-             => Eval field value error app ()
-    popStack = Eval $
+             => field -> Eval field value error app ()
+    popStack fld = Eval $
       do
         s <- get
-        let EvalState { esStack = stack } =  s
+        let EvalState { esStack = stack } = s
         case stack of
-          []       -> error "This should really not happen, the stack is empty when trying to pop"
-          (_:news) -> put $ s {esStack = news}
+          (_:news) -> put $ s {esStack = news, esField = fld}
+          _ -> error "This should really not happen, the stack is empty when trying to pop"
 
 updateResult :: (HackcelError error field, Ord field)
              => [field]
