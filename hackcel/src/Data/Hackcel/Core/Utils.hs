@@ -35,7 +35,8 @@ prettyprint :: (Show field, Show value, Show error, Show app) => HackcelState fi
 prettyprint hackcel = foldr printField "" $ M.toAscList allFields
   where
     allFields = fields hackcel
-    printField (k, a) s = show k ++ ": " ++ printValue a ++ "\n" ++ s
+    printField (k, a) "" = show k ++ ": " ++ printValue a
+    printField (k, a) s  = show k ++ ": " ++ printValue a ++ "\n" ++ s
     printValue (expr, Nothing)  = "=" ++ show expr ++ ": <not calculated>"
     printValue (expr, Just val) = "=" ++ show expr ++ ": " ++ case fieldValue val of
       Left e -> show e

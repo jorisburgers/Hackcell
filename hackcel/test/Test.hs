@@ -10,7 +10,7 @@ import ParserTests
 main = defaultMain tests
 
 tests = testGroup "Tests" [
-        properties, 
+        properties,
         unitTests
     ]
 

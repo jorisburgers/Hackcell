@@ -9,7 +9,10 @@ import Data.Maybe
 
 data Value  = ValInt Int
             | ValDouble Double
-            deriving Show
+
+instance Show Value where
+  show (ValInt x)    = show x
+  show (ValDouble x) = show x
 
 data NumberError    = RecursionError String
                     | UnknownFieldError String
