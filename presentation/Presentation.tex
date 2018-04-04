@@ -36,12 +36,12 @@
   \begin{frame}[fragile]
   		\frametitle{Wrapper - Field}
   		\begin{minted}{haskell}
-data Field = FieldInt Int
+data Field = Field Int
             deriving (Ord)
   		\end{minted}
   		\pause
 		\begin{minted}{haskell}
-data Field = FieldInt (String, Int, Int)
+data Field = Field (String, Int, Int)
             deriving (Ord)
   		\end{minted}  		
   		\pause
