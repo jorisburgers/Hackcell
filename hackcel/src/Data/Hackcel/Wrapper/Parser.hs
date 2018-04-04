@@ -53,10 +53,6 @@ pField = f <$> pSome pFieldColumnChar <*> pInt
   where
     f column row = FieldInt (foldl (\x y -> 1 + x * 26 + y) 0 column, row)
 
-{-
-    | Sum
-    -}
-
 -- Parses an expression of a left associative infix binary operator
 pOperatorLeft :: Parser Fns -> Parser Expression' -> Parser Expression'
 pOperatorLeft token p = (\left right -> right left) <$> p <* pSpaces <*> pRight
