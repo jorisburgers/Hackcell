@@ -116,10 +116,23 @@ interface = do setTitle "HackCell: the Spreadsheet program in Haskell"
                               \ argument"; mainProgram False
                      ' ':xs -> loadfile xs
                      xs  -> do unknownArg ('l':xs); mainProgram False
-         'S' -> do let (fileloc, hst) = (fromJust (file s), fromJust (hstate s))
-                   liftIO $ writeFile fileloc (prettyprint hst)
-                   putStrLnS $ "File saved under: " ++ fileloc
-                   mainProgram False
+         'S' -> do
+            afn <- liftIO getLine
+            case afn of
+              "" -> do
+                let (fileloc, hst) = (fromJust (file s), fromJust (hstate s))
+                liftIO $ writeFile fileloc (prettyprint hst)
+                putStrLnS $ "File saved under: " ++ fileloc
+                mainProgram False
+              'A':' ':fn -> do
+                let hst = fromJust (hstate s)
+                liftIO $ writeFile fn (prettyprint hst)
+                putStrLnS $ "File saved under: " ++ fn
+                liftIO $ setTitle ("HackCell: the Spreadsheet program in Haskell: "
+                   ++ fn)
+                put (s {file = Just fn })
+                mainProgram False
+              xs -> do unknownArg ('S':xs); mainProgram False
          'w' -> do moveField (0,-1); mainProgram True
          's' -> do moveField (0,1); mainProgram True
          'a' -> do moveField (-1,0); mainProgram True
@@ -209,14 +222,15 @@ interface = do setTitle "HackCell: the Spreadsheet program in Haskell"
           "Welcome to HackCell 2D, the console spreadsheet program for two dimensional spreadsheets. \n\
           \Helper for the HackCell 2D program.\n\
           \Commands: 'h' for this helper\n\
-          \          'l [file]' to load a file\
-          \          'S' to save the current spreadsheet \n \n\
+          \          'l [file]' to load a file\n\
+          \          'S' to save the current spreadsheet \n\
+          \          'SA [file] to save the file to the given location \n \n\
           \          'w' to move up\n\
           \          's' to move down\n\
           \          'a' to move left\n\
           \          'd' to move right\n\
           \          'z' to switch between viewing results and expressions\n\
-          \          'i [expression]' to insert an expression\n\n\
+          \          'i [expression]' to insert an expression at the current position\n\n\
           \          'q' to quit"
 
     putStrLnS :: String -> StateT InterActiveState IO ()
