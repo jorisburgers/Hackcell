@@ -44,7 +44,7 @@ data Field = FieldInt (String, Int, Int)
   		\end{minted}  		
   		\pause
   		\begin{minted}{haskell}
-data Field = FieldInt (String, Int, Int)
+data Field = Field (String, Int, Int)
 	   | CurrentTime
            deriving (Ord)
         \end{minted} 
@@ -62,7 +62,7 @@ data Value  = ValInt Int
   \begin{frame}[fragile]
   		\frametitle{Wrapper - Error}
 		  		\begin{minted}{haskell}
-data NumberError    = RecursionError String
+data NumberError    = RecursionError [Field]
                     | UnknownFieldError String
                     | DivideByZeroError String
                     | ErrorUnexpectedValue
