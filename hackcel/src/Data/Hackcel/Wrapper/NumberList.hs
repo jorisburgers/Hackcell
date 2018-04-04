@@ -19,10 +19,10 @@ data Field = FieldInt Int
 field :: Int -> Field
 field = FieldInt
 
-fieldExpr :: Int -> Expression Field Value NumberError
+fieldExpr :: Int -> Expression Field Value NumberError Fns
 fieldExpr = ExprField . field
 
-fieldParam :: Int -> Parameter Field Value NumberError
+fieldParam :: Int -> Parameter Field Value NumberError Fns
 fieldParam = PExpr . fieldExpr
 
 instance Show Field where
@@ -37,10 +37,10 @@ instance HackcelError NumberError Field where
     errorExpectedValueGotRange = ErrorUnexpectedValue
     errorExpectedRangeGotValue = ErrorUnexpectedRange
 
-listToSpreadSheet :: [Expression Field Value NumberError] -> HackcelState Field Value NumberError
-listToSpreadSheet xs = createHackcel (Spreadsheet $ fromList fields) numberHandler
+listToSpreadSheet :: [Expression Field Value NumberError Fns] -> HackcelState Field Value NumberError Fns
+listToSpreadSheet xs = createHackcel (Spreadsheet $ fromList fields)
                     where
-                        fields :: [(Field, Expression Field Value NumberError)]
+                        fields :: [(Field, Expression Field Value NumberError Fns)]
                         fields = map (\(x, i) -> x @@ field i) $
                                     fst $ foldl (\x y -> (fst x ++ [(y, snd x)], snd x + 1)) ([], 0) xs
 
@@ -60,16 +60,15 @@ values = map (\x -> valueInt x @@ field x) [0..10]
 
 computations =
     [
-        op "plus" [fieldParam 3, fieldParam 5] @@ field 11,
-        op "plus" [fieldParam 11, fieldParam 8] @@ field 12,
-        op "divide" [fieldParam 3, PExpr $  valueInt 0] @@ field 13,
-        op "minus" [PExpr $ valueInt 3, PExpr $ valueInt 5] @@ field 14,
-        op "sum" [PRange (field 0) (field 5)] @@ field 15
+        op Plus [fieldParam 3, fieldParam 5] @@ field 11,
+        op Plus [fieldParam 11, fieldParam 8] @@ field 12,
+        op Divide [fieldParam 3, PExpr $ valueInt 0] @@ field 13,
+        op Minus [PExpr $ valueInt 3, PExpr $ valueInt 5] @@ field 14
     ]
 
-spreadSheet = createHackcel (Spreadsheet $ fromList (values ++ computations)) numberHandler
+spreadSheet = createHackcel (Spreadsheet $ fromList (values ++ computations))
 
-expressions = [valueInt 3, valueInt 5, valueInt 7, op "plus" [fieldParam 2, fieldParam 0], valueDouble 3.5]
+expressions = [valueInt 3, valueInt 5, valueInt 7, op Plus [fieldParam 2, fieldParam 0], valueDouble 3.5]
 
 foundValues :: [Either NumberError Value]
 foundValues = fst $ getValues (map field [0..15]) spreadSheet
@@ -77,5 +76,5 @@ foundValues = fst $ getValues (map field [0..15]) spreadSheet
 intParser :: String -> Maybe Field
 intParser s = FieldInt <$> readMaybe s
 
-efParser :: String -> Maybe (Field, Expression Field Value NumberError)
-efParser s = Just $ (op "plus" [fieldParam 3, fieldParam 5] @@ field 16)
+efParser :: String -> Maybe (Field, Expression Field Value NumberError Fns)
+efParser s = Just $ (op Plus [fieldParam 3, fieldParam 5] @@ field 16)

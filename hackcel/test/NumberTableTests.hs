@@ -15,25 +15,23 @@ numberTableProperties = testGroup "Number Table Properties" [
         singleDoubleValueProperty
     ]
 
-fromRight (Right x) = x
-fromRight (Left _)  = error "Right expected, got left"
-
-fromLeft (Left x) = x
-fromLeft (Right _)  = error "Left expected, got right"
+fromRight' :: Either a b -> b
+fromRight' (Right x) = x
+fromRight' (Left _)  = error "Right expected, got left"
 
 -- Creates a spreadsheet for numbers
-createSpreadSheet :: [[(Field, Expression Field Value NumberError)]] -> HackcelState Field Value NumberError
-createSpreadSheet exprs = createHackcel (Spreadsheet $ fromList $ concat exprs) numberHandler
+createSpreadSheet :: [[(Field, Expression Field Value NumberError Fns)]] -> HackcelState Field Value NumberError Fns
+createSpreadSheet exprs = createHackcel (Spreadsheet $ fromList $ concat exprs)
 
 -- Test whether a value returns the correct response
-singleValueProperty :: (Eq a) => (Value -> a) -> (a -> Expression Field Value NumberError) -> a -> Int -> Int -> Bool
+singleValueProperty :: (Eq a) => (Value -> a) -> (a -> Expression Field Value NumberError Fns) -> a -> Int -> Int -> Bool
 singleValueProperty unF f x y z = (unF valueF) == x
                             where
                                 valueF :: Value
-                                valueF = (fromRight $ fst result)
-                                result :: (Either NumberError Value, HackcelState Field Value NumberError)
+                                valueF = (fromRight' $ fst result)
+                                result :: (Either NumberError Value, HackcelState Field Value NumberError Fns)
                                 result = runField (field (y, z)) spreadSheet
-                                spreadSheet :: HackcelState Field Value NumberError
+                                spreadSheet :: HackcelState Field Value NumberError Fns
                                 spreadSheet = createSpreadSheet [[f x @@ field (y, z)]]
 
 -- Test the insertion of an Int
