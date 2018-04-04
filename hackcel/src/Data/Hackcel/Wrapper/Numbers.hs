@@ -15,7 +15,7 @@ data Value  = ValInt Int
             | ValDouble Double
             | ValBool Bool
             deriving (Eq)
-            
+
 instance Show Value where
   show (ValInt x)    = show x
   show (ValDouble x) = show x
@@ -157,10 +157,12 @@ instance (HackcelError NumberError field, Ord field, FieldRange field) => Apply 
                                 return (ValBool $ lt || eq)
         apply  If  p   = do
                             cond <- expectValue (head p)
-                            if cond == ValBool True then
-                                expectValue (p !! 1)
-                            else
-                                expectValue (p !! 2)
+                            case cond of
+                                ValBool _ -> if cond == ValBool True then
+                                                expectValue (p !! 1)
+                                            else
+                                                expectValue (p !! 2)
+                                _ -> tError ErrorInvalidType
         apply  name  p   =  do
                             x <- expectValue (head p)
                             y <- expectValue (p !! 1)
@@ -178,7 +180,7 @@ rangeHandler :: (FieldRange field, Ord field, HackcelError NumberError field)
             -> Eval field Value NumberError Fns Value
 rangeHandler f f1 f2 = do
                         values <- mapM getValue (getRange f1 f2)
-                        if not $ isUniformType $ traceShow values values then
+                        if not $ isUniformType values then
                             tError $ ErrorInvalidType
                         else
                             return $ f values
