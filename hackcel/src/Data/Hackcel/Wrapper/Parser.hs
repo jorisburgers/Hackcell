@@ -49,7 +49,7 @@ pFieldColumnChar = (\c -> fromJust $ elemIndex c ['A' .. ]) <$> pRange ('A', 'Z'
 pField :: Parser Field
 pField = f <$> pSome pFieldColumnChar <*> pInt
   where
-    f column row = FieldInt (foldl (\x y -> x * 26 + y) 0 column, row)
+    f column row = FieldInt (foldl (\x y -> 1 + x * 26 + y) 0 column, row)
 
 -- Parses an expression of a left associative infix binary operator
 pOperatorLeft :: Parser Fns -> Parser Expression' -> Parser Expression'
@@ -62,7 +62,16 @@ pOperatorLeft token p = (\left right -> right left) <$> p <* pSpaces <*> pRight
 pSimple :: Parser Expression'
 pSimple = ExprLit <$> pNumber
       <|> ExprField <$> pField
+      <|> pApl
       <|> pToken "(" *> pExpression <* pToken ")"
+
+pApl :: Parser Expression'
+pApl = ExprApp <$> operators <*
+  pToken "(" <*> pListSep (pToken ",") (PExpr <$> pExpression) <* pToken ")"
+  where
+    operators :: Parser Fns
+    operators = foldr (\ap b -> ap <$ pToken (show ap) <|> b) pFail
+      [Plus, Minus, Times, Divide]
 
 pPlusMinus :: Parser Expression'
 pPlusMinus = pOperatorLeft token pSimple
@@ -83,3 +92,14 @@ parseExpression :: String -> (Expression', Bool)
 parseExpression str = (expr, null errors)
   where
     (expr, errors) = parse ((,) <$> pExpression <*> pEnd) $ createStr (LineCol 0 0) str
+
+pLine :: Parser (Field, Expression')
+pLine = (,) <$> pField <* pToken ": =" <*> pExpression <* pToken ":" <* pMunch (/='\n')
+
+pFile :: Parser [(Field, Expression')]
+pFile = pListSep (pToken "\n") pLine
+
+parseFile :: String -> ([(Field, Expression')], Bool)
+parseFile str = (file, null errors)
+  where
+    (file, errors) = parse ((,) <$> pFile <*> pEnd) $ createStr (LineCol 0 0) str

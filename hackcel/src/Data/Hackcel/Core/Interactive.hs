@@ -30,8 +30,8 @@ interactive state pField pExpr = do help
                                        mainProgram news
                           Nothing -> do putStrLn $ "Cannot parse " ++ rest ++ " into a field"
                                         mainProgram s
-        'i':' ':rest -> case pExpr rest of
-                         Just (f, e) -> do let news = insertExpression s f e
+        's':' ':rest -> case pExpr rest of
+                         Just (f, e) -> do let news = set s f e
                                            prettyprinter news
                                            mainProgram news
                          Nothing -> do putStrLn $ "Cannot parse " ++ rest ++ " into an expression"
@@ -46,4 +46,4 @@ interactive state pField pExpr = do help
           \          'q' to quit\n\
           \          'e [field]' to evaluate a field\n\
           \          'e a' to evaluate all fields\n\
-          \          'i [expression]@@[field]' to insert an expression at a field"
+          \          's [expression]@@[field]' to insert or update an expression at a field"

@@ -37,6 +37,6 @@ data Expression field value error app
   | ExprApp app [Parameter field value error app]
 
 instance (Show field, Show value, Show error, Show app) => Show (Expression field value error app) where
-  show (ExprField field) = "$" ++ show field
+  show (ExprField field) = show field
   show (ExprLit value)   = show value
   show (ExprApp name ps) = show name ++ "(" ++ intercalate "," (map show ps) ++ ")"

@@ -14,7 +14,12 @@ import Debug.Trace
 data Value  = ValInt Int
             | ValDouble Double
             | ValBool Bool
-            deriving (Show, Eq)
+            deriving (Eq)
+            
+instance Show Value where
+  show (ValInt x)    = show x
+  show (ValDouble x) = show x
+  show (ValBool x)   = show x
 
 data NumberError    = RecursionError String
                     | UnknownFieldError String

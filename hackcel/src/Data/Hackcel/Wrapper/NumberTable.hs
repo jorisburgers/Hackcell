@@ -3,11 +3,13 @@
 module Data.Hackcel.Wrapper.NumberTable where
 
 import Data.Hackcel.Core
-import Data.Hackcel.Wrapper.Numbers
 import Data.Hackcel.Wrapper.DSL
+import Data.Hackcel.Wrapper.Numbers
 
 import Data.Either
-import Data.Map.Strict hiding (foldl, map)
+import qualified Data.Map.Strict as M
+import Data.Char
+
 
 import Prelude hiding (LT, GT, EQ)
 
@@ -19,14 +21,26 @@ type Expression' = Expression Field Value NumberError Fns
 field :: (Int, Int) -> Field
 field = FieldInt
 
-fieldExpr :: (Int, Int) -> Expression Field Value NumberError Fns
+fieldExpr :: (Int, Int) -> Expression'
 fieldExpr = ExprField . field
 
 fieldParam :: (Int, Int) -> Parameter Field Value NumberError Fns
 fieldParam = PExpr . fieldExpr
 
 instance Show Field where
-    show (FieldInt n) = show n
+    show (FieldInt (a,b)) = columntoNumber a ++ show b
+
+columntoNumber :: Int -> String
+columntoNumber x | x < 0 = '-' : helper (-x)
+                 | x == 0 = "o"
+                 | otherwise = helper x
+  where
+    helper :: Int -> String
+    helper 0 = ""
+    helper x = let (d, m) = divMod (x - 1) 26 in
+               helper d ++ [chr (ord 'A' + m)]
+
+
 
 instance HackcelError NumberError Field where
     errorUnknownField field = UnknownFieldError $ "Unknown field error at index " ++ show field
@@ -38,20 +52,18 @@ instance FieldRange Field where
     getRange (FieldInt (x1, y1)) (FieldInt (x2, y2)) = [FieldInt (x, y)  | x <- [(min x1 x2)..(max x1 x2)]
                                                                 , y <- [(min y1 y2) .. (max y1 y2)]]
 
-listToSpreadSheet :: [[Expression Field Value NumberError Fns]] -> HackcelState Field Value NumberError Fns
+listToSpreadSheet :: [[Expression']] -> HackcelState Field Value NumberError Fns
 listToSpreadSheet xss   | not (sameLengths xss) = error "multidimensionale array not all the same size"
-                        | otherwise             = createHackcel (Spreadsheet $ fromList $ concat $ fields xss 0 0)
+                        | otherwise             = createHackcel (Spreadsheet $ M.fromList $ concat $ fields xss 1 1)
                         where
                             sameLengths :: [[a]] -> Bool
                             sameLengths []  = True
-                            sameLengths xss = and $ map (\xs -> length (head xss) == length xs) xss
+                            sameLengths xss = all (\xs -> length (head xss) == length xs) xss
                             fieldCel    x c r           = x @@ field (r, c)
                             fieldRow    [] c r          = []
                             fieldRow    (x:xs) c r      = fieldCel x c r : fieldRow xs (c+1) r
                             fields      []  c r         = []
-                            fields      (xs:xss) c r    = fieldRow xs 0 r : fields xss 0 (r+1)
-
-
+                            fields      (xs:xss) c r    = fieldRow xs c r : fields xss c (r+1)
 
 expressions = [
                 [valueInt 3, valueInt 5, valueInt 7],
