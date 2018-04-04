@@ -22,8 +22,14 @@ field = FieldInt
 fieldExpr :: Int -> Expression Field Value NumberError Fns
 fieldExpr = ExprField . field
 
+fieldParam :: Int -> Parameter Field Value NumberError Fns
+fieldParam = PExpr . fieldExpr
+
 instance Show Field where
     show (FieldInt n) = show n
+
+instance FieldRange Field where
+    getRange (FieldInt x) (FieldInt y) = map FieldInt [x..y]
 
 instance HackcelError NumberError Field where
     errorUnknownField field = UnknownFieldError $ "Unknown field error at index " ++ show field
@@ -54,21 +60,21 @@ values = map (\x -> valueInt x @@ field x) [0..10]
 
 computations =
     [
-        op Plus [fieldExpr 3, fieldExpr 5] @@ field 11,
-        op Plus [fieldExpr 11, fieldExpr 8] @@ field 12,
-        op Divide [fieldExpr 3, valueInt 0] @@ field 13,
-        op Minus [valueInt 3, valueInt 5] @@ field 14
+        op Plus [fieldParam 3, fieldParam 5] @@ field 11,
+        op Plus [fieldParam 11, fieldParam 8] @@ field 12,
+        op Divide [fieldParam 3, PExpr $ valueInt 0] @@ field 13,
+        op Minus [PExpr $ valueInt 3, PExpr $ valueInt 5] @@ field 14
     ]
 
 spreadSheet = createHackcel (Spreadsheet $ fromList (values ++ computations))
 
-expressions = [valueInt 3, valueInt 5, valueInt 7, op Plus [fieldExpr 2, fieldExpr 0], valueDouble 3.5]
+expressions = [valueInt 3, valueInt 5, valueInt 7, op Plus [fieldParam 2, fieldParam 0], valueDouble 3.5]
 
 foundValues :: [Either NumberError Value]
-foundValues = fst $ getValues (map field [0..14]) spreadSheet
+foundValues = fst $ getValues (map field [0..15]) spreadSheet
 
 intParser :: String -> Maybe Field
 intParser s = FieldInt <$> readMaybe s
 
 efParser :: String -> Maybe (Field, Expression Field Value NumberError Fns)
-efParser s = Just $ (op Plus [fieldExpr 3, fieldExpr 5] @@ field 16)
+efParser s = Just $ (op Plus [fieldParam 3, fieldParam 5] @@ field 16)
