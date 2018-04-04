@@ -1,5 +1,6 @@
 \documentclass{beamer}
 \usepackage{hyperref}
+\usepackage{minted}
 \usepackage{beamerthemeuucs}
 \title{Hackcell}
 \subtitle{A spreadsheet library in Haskell}
@@ -12,4 +13,102 @@
 		\huge{Demonstration}
 	\end{center}
   \end{frame}
+  \begin{frame}
+  		\frametitle{Wrapper}
+		\begin{itemize}  		
+  			\item The wrapper is a shell around the abstract \textit{Core}
+  			\item A programmer can construct their own wrapper or use an existing one
+  			\item The wrapper provides the concrete fields and values of the spreadsheet.
+  		\end{itemize}
+  \end{frame}
+  \begin{frame}
+  		\frametitle{Wrapper}
+  		For a wrapper, the programmer needs a few things.
+  		\begin{itemize}
+  			\item \texttt{Field}: A way to index every cell.
+  			\item \texttt{Value}: The content of a cell, can be any type.
+  			\item \texttt{Error}: The errors that can be thrown.
+  			\item \texttt{Applications}: The commands that can be performed on the values.
+  		\end{itemize}
+  \end{frame}
+  \begin{frame}[fragile]
+  		\frametitle{Wrapper - Field}
+  		\begin{minted}{haskell}
+data Field = FieldInt Int
+            deriving (Ord)
+  		\end{minted}
+  		\pause
+		\begin{minted}{haskell}
+data Field = FieldInt (String, Int, Int)
+            deriving (Ord)
+  		\end{minted}  		
+  		\pause
+  		\begin{minted}{haskell}
+data Field = Field (String, Int, Int)
+	   | CurrentTime
+           deriving (Ord)
+        \end{minted} 
+  \end{frame}
+\begin{frame}[fragile]
+  		\frametitle{Wrapper - Value}
+  		\begin{minted}{haskell}
+data Value  = ValInt Int
+            | ValDouble Double
+            | ValBool Bool
+            | ValString String
+            | ValTree Tree
+  		\end{minted}
+  \end{frame}
+  \begin{frame}[fragile]
+  		\frametitle{Wrapper - Error}
+		  		\begin{minted}{haskell}
+data NumberError    = RecursionError [Field]
+                    | UnknownFieldError String
+                    | DivideByZeroError String
+                    | ErrorUnexpectedValue
+                    | ErrorUnexpectedRange
+                    | ErrorInvalidType
+                    deriving (Show)
+  		\end{minted}
+  \end{frame}
+    \begin{frame}[fragile]
+  		\frametitle{Wrapper - Error}
+		  		\begin{minted}{haskell}
+class HackcelError t field | t -> field where
+  errorUnknownField :: field -> t
+  errorRecursion :: [field] -> t
+  errorExpectedValueGotRange :: t
+  errorExpectedRangeGotValue :: t
+  		\end{minted}
+  		The function \texttt{tError} can be used to throw an error for the current cell.
+  \end{frame}
+	    \begin{frame}[fragile]
+  		\frametitle{Wrapper - Application}
+  		Handler takes a command and a list of parameters.
+  		\\\\
+  		Example commands:
+  		\begin{minted}{haskell}
+data Commands = Plus
+              | Minus
+              | Times
+              | Divide        
+  		\end{minted}
+  \end{frame}  
+  \begin{frame}[fragile]
+  \frametitle{Wrapper - Application}
+  		Handler takes a command and a list of parameters.
+  		\\
+  		Example \texttt{PLUS}:
+  		\begin{minted}{haskell}
+apply Plus [px, py] = do
+		ValueInt x <- expectValue px 
+		ValueInt y <- expectValue py
+		return (ValueInt (x + y))
+  		\end{minted}
+  		\begin{itemize}
+  		\item \texttt{expectValue} is used for values
+  		\item \texttt{expectRange} is used to get lower bound and upper bound on ranges.
+  		\end{itemize}
+  \end{frame}  
+  
 \end{document}
