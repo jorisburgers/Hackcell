@@ -6,6 +6,7 @@
 \subtitle{A spreadsheet library in Haskell}
 \author{Joris Burgers, Lars van den Haak and Ivo Gabe de Wolff}
 \date{April 5, 2018}
+
 \begin{document}
 	\frame{\titlepage}
   \begin{frame}
@@ -13,6 +14,7 @@
 		\huge{Demonstration}
 	\end{center}
   \end{frame}
+
   \begin{frame}
   		\frametitle{Wrapper}
 		\begin{itemize}  		
@@ -34,12 +36,12 @@
   \begin{frame}[fragile]
   		\frametitle{Wrapper - Field}
   		\begin{minted}{haskell}
-data Field = FieldInt Int
+data Field = Field Int
             deriving (Ord)
   		\end{minted}
   		\pause
 		\begin{minted}{haskell}
-data Field = FieldInt (String, Int, Int)
+data Field = Field (String, Int, Int)
             deriving (Ord)
   		\end{minted}  		
   		\pause
@@ -74,6 +76,7 @@ data NumberError    = RecursionError [Field]
     \begin{frame}[fragile]
   		\frametitle{Wrapper - Error}
 		  		\begin{minted}{haskell}
+
 class HackcelError t field | t -> field where
   errorUnknownField :: field -> t
   errorRecursion :: [field] -> t
@@ -110,5 +113,100 @@ apply Plus [px, py] = do
   		\item \texttt{expectRange} is used to get lower bound and upper bound on ranges.
   		\end{itemize}
   \end{frame}  
-  
+
+\begin{frame}
+\frametitle{Core}
+\begin{itemize}
+	\item Generic
+	\item Simple expression language
+	\item Memoization
+	\item Dependency tracking
+	\item Monadic interface for method definitions
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Type arguments}
+\begin{minted}{haskell}
+newtype Spreadsheet field value err app =
+  Spreadsheet { unSpreadsheet :: M.Map field
+    (Expression field value err app) }
+\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Type classes}
+\begin{minted}{haskell}
+class Ord field
+
+class Apply field value error app where
+  apply :: app
+        -> [Argument field value error app]
+        -> Eval field value error app value
+
+\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Expression language}
+\begin{minted}{haskell}
+data Expression field value error app
+  = ExprField field
+  | ExprLit value
+  | ExprApp app [Parameter field value error app]
+
+data Parameter field value error app
+  = PExpr (Expression field value error app)
+  | PRange field field
+\end{minted}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Memoization \& dependency tracking}
+\begin{itemize}
+	\item Store the value
+	\item Store a list of fields that depend on this field
+	\item Dependency graph
+\end{itemize}
+
+\begin{minted}{haskell}
+M.Map field (
+  Expression field value error app,
+  Maybe (FieldResult field value error))
+
+data FieldResult field value error = FieldResult
+  (Either error value)
+  [field]
+\end{minted}
+\end{frame}
+
+\begin{frame}
+\frametitle{Updating a field}
+\begin{itemize}
+	\item Remove old expression \& result
+	\item Recursively invalidate the dependents
+	\item When requested, evaluate the field
+\end{itemize}
+\end{frame}
+
+\begin{frame}[fragile]
+\frametitle{Eval monad}
+
+\texttt{EvalState}
+\begin{itemize}
+	\item The current field, used for dependency tracking
+	\item A stack of fields to detect circular references
+	\item The state of the spreadsheet
+\end{itemize}
+
+\begin{minted}{haskell}
+newtype Eval field value error app a = Eval
+  (ExceptT error
+    (State (EvalState field value error app))
+    a)
+\end{minted}
+\end{frame}
+
+\frame{\titlepage}
+
 \end{document}
