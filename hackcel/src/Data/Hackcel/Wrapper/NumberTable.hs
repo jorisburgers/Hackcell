@@ -12,6 +12,8 @@ import Data.Map.Strict hiding (foldl, map)
 data Field = FieldInt (Int, Int)
             deriving (Eq, Ord)
 
+type Expression' = Expression Field Value NumberError Fns
+
 field :: (Int, Int) -> Field
 field = FieldInt
 
