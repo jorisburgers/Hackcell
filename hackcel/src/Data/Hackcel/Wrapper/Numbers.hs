@@ -48,6 +48,7 @@ data Fns
     | LE
     | GT
     | GE
+    | NE
     | Not
     | EQ
     | And
@@ -126,6 +127,10 @@ instance (HackcelError NumberError field, Ord field, FieldRange field) => Apply 
                             x <- expectValue (head args)
                             y <- expectValue (args !! 1)
                             return (ValBool $ x == y)
+        apply  NE  args   = do
+                            x <- expectValue (head args)
+                            y <- expectValue (args !! 1)
+                            return (ValBool $ x /= y)
         apply  Not args = do
                             x <- expectValue (head args)
                             case x of

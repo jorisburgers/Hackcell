@@ -29,6 +29,16 @@ valid = testGroup "Parse valid expressions" $ fmap shouldParse
   , "A1 * A2 * A3 * A4"
   , "(((1)))"
   , "(A1 + 1) * 3 + 1"
+  , "1 == 1 && 2 == 2"
+  , "1 == 1 && 2 == 2 || 3 == 4"
+  , "!!!!!!!!!2"
+  , "1 ? 2 : 3"
+  , "1 ? 2 ? 3 : 4 : 5 ? 6 : 7"
+  , "Sum(A1C10)"
+  , "Sum(A1C10) + Sum(X9Y10)"
+  , "true"
+  , "true == true && false == false ? true : false"
+  , "true != false"
   ]
 
 invalid :: TestTree
