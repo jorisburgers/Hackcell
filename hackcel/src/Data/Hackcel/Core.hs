@@ -9,8 +9,8 @@ module Data.Hackcel.Core
   )
   where
 
-import Data.Hackcel.Core.Eval(Eval, fields, App, HackcelState, runField
-                             , Argument, getValue, insertExpression)
+import Data.Hackcel.Core.Eval(Eval, fields, Apply, apply, HackcelState, runField
+                             , Argument, getValue, set)
 import Data.Hackcel.Core.Expression
 import Data.Hackcel.Core.Spreadsheet
 import Data.Hackcel.Core.Utils

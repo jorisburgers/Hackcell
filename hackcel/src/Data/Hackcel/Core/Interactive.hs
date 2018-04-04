@@ -5,9 +5,11 @@ import Data.Hackcel.Core.Eval
 import Data.Hackcel.Core.Expression
 import Data.Hackcel.Core.Utils
 
-interactive :: (Show field, Show value, Show error, HackcelError error field
-               , Ord field) => HackcelState field value error -> (String -> Maybe field)
-            -> (String -> Maybe (field, Expression field value error)) -> IO ()
+interactive :: (Show field, Show value, Show error, Show app, HackcelError error field
+               , Ord field, Apply field value error app)
+            => HackcelState field value error app
+            -> (String -> Maybe field)
+            -> (String -> Maybe (field, Expression field value error app)) -> IO ()
 interactive state pField pExpr = do help
                                     mainProgram state
   where
@@ -28,8 +30,8 @@ interactive state pField pExpr = do help
                                        mainProgram news
                           Nothing -> do putStrLn $ "Cannot parse " ++ rest ++ " into a field"
                                         mainProgram s
-        'i':' ':rest -> case pExpr rest of
-                         Just (f, e) -> do let news = insertExpression s f e
+        's':' ':rest -> case pExpr rest of
+                         Just (f, e) -> do let news = set s f e
                                            prettyprinter news
                                            mainProgram news
                          Nothing -> do putStrLn $ "Cannot parse " ++ rest ++ " into an expression"
@@ -44,4 +46,4 @@ interactive state pField pExpr = do help
           \          'q' to quit\n\
           \          'e [field]' to evaluate a field\n\
           \          'e a' to evaluate all fields\n\
-          \          'i [expression]@@[field]' to insert an expression at a field"
+          \          's [expression]@@[field]' to insert or update an expression at a field"

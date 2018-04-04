@@ -21,7 +21,7 @@ data Field = FieldInt (Int, Int)
 field :: (Int, Int) -> Field
 field = FieldInt
 
-fieldExpr :: (Int, Int) -> Expression Field Value NumberError
+fieldExpr :: (Int, Int) -> Expression Field Value NumberError Fns
 fieldExpr = ExprField . field
 
 instance Show Field where
@@ -29,13 +29,13 @@ instance Show Field where
 
 instance HackcelError NumberError Field where
     errorUnknownField field = UnknownFieldError $ "Unknown field error at index " ++ show field
-    errorRecursion fields   = RecursionError $ "Circular referencing via " ++ concatMap show fields
+    errorRecursion fields = RecursionError $ "Circular referencing via " ++ concatMap show fields
     errorExpectedValueGotRange = ErrorUnexpectedValue
     errorExpectedRangeGotValue = ErrorUnexpectedRange
 
-listToSpreadSheet :: [[Expression Field Value NumberError]] -> HackcelState Field Value NumberError
+listToSpreadSheet :: [[Expression Field Value NumberError Fns]] -> HackcelState Field Value NumberError Fns
 listToSpreadSheet xss   | not (sameLengths xss) = error "multidimensionale array not all the same size"
-                        | otherwise             = createHackcel (Spreadsheet $ M.fromList $ concat $ fields xss 0 0) numberHandler
+                        | otherwise             = createHackcel (Spreadsheet $ M.fromList $ concat $ fields xss 0 0)
                         where
                             sameLengths :: [[a]] -> Bool
                             sameLengths []  = True
@@ -49,16 +49,16 @@ listToSpreadSheet xss   | not (sameLengths xss) = error "multidimensionale array
 
 
 expressions = [
-                [valueInt 3, valueInt 5, valueInt 7],
-                [op "plus" [fieldExpr (0,2), valueInt 3], valueDouble 3.5, valueInt 6]
-            ]
+              [valueInt 3, valueInt 5, valueInt 7],
+              [op Plus [fieldExpr (0,2), valueInt 3], valueDouble 3.5, valueInt 6]
+              ]
 
 
-testSpreadsheet :: HackcelState Field Value NumberError
+testSpreadsheet :: HackcelState Field Value NumberError Fns
 testSpreadsheet = listToSpreadSheet expressions
 
 data InterActiveState = InterActiveState {
-                          hstate :: Maybe (HackcelState Field Value NumberError)
+                          hstate :: Maybe (HackcelState Field Value NumberError Fns)
                         , current :: Field
                         , topLeftPrint :: Field
                         , view :: View
@@ -75,7 +75,7 @@ printNumberTable ias = maybe "" (render.printer) curstate
     curview = view ias
     FieldInt (l,t) = topLeftField
 
-    printer :: HackcelState Field Value NumberError -> Box
+    printer :: HackcelState Field Value NumberError Fns -> Box
     printer state = (rowname <> (columnname // vcat left (
         map (\j -> foldr (\i b -> helper state i j <> b) nullBox [0..9]) [0..9]))
         ) // char ' ' // text ( curExpr state) // text (currResult state)
@@ -88,7 +88,7 @@ printNumberTable ias = maybe "" (render.printer) curstate
                          ++ " = " ++ show v
                        Nothing    -> " = "
 
-    helper :: HackcelState Field Value NumberError -> Int -> Int -> Box
+    helper :: HackcelState Field Value NumberError Fns -> Int -> Int -> Box
     helper state i j = let f = FieldInt (i + l,j + t) in
       case M.lookup f (fields state) of
         Just (e, Just v) -> case curview of
@@ -165,7 +165,7 @@ interface = do setTitle "HackCell: the Spreadsheet program in Haskell"
                    mainProgram True
          'i'  -> do xs <- liftIO getLine
                     case pExpr xs of
-                      Just e  -> do let news = insertExpression (fromJust (hstate s)) (current s) e
+                      Just e  -> do let news = set (fromJust (hstate s)) (current s) e
                                     let (_, runnews) = runField (current s) news
                                     put (s {hstate = Just runnews})
                                     refresh
@@ -197,8 +197,8 @@ interface = do setTitle "HackCell: the Spreadsheet program in Haskell"
                    Nothing -> return ()
                    Just hstate -> putStrLnS $ printNumberTable s
 
-    pExpr :: String -> Maybe (Expression Field Value NumberError)
-    pExpr s = Just $ op "plus" [fieldExpr (2,3), fieldExpr (1,5)]
+    pExpr :: String -> Maybe (Expression Field Value NumberError Fns)
+    pExpr s = Just $ op Plus [fieldExpr (2,3), fieldExpr (1,5)]
 
     help :: StateT InterActiveState IO ()
     help = putStrLnS
