@@ -1,5 +1,7 @@
 module NumberListTests where
 
+import Prelude hiding (EQ, LT, GT)
+
 import Test.Tasty
 import Test.Tasty.QuickCheck
 
@@ -14,11 +16,17 @@ import Data.Map.Strict
 numberListProperties = testGroup "Number List Properties" [
         singleIntValueProperty,
         singleDoubleValueProperty,
-        plusIntPropery,
-        minusIntPropery,
-        timesIntPropery,
-        divideIntNormalPropery,
-        divideIntErrorPropery
+        plusIntProperty,
+        minusIntProperty,
+        timesIntProperty,
+        divideIntNormalProperty,
+        divideIntErrorProperty,
+        andBoolProperty,
+        orBoolProperty,
+        ltIntProperty,
+        leIntProperty,
+        gtIntProperty,
+        geIntProperty
     ]
 
 fromRight' :: Either a b -> b
@@ -51,7 +59,7 @@ singleIntValueProperty = testProperty "Single int insertion and retrieval" $ sin
 singleDoubleValueProperty = testProperty "Single double insertion and retrieval" $ singleValueProperty fromValueDouble valueDouble
 
 -- Verifies that an operation gives the correct result
-operationProperty :: (Eq a) => (a -> a -> a) -> Fns -> (Value -> a) -> (a -> Expression Field Value NumberError Fns) -> a -> a -> Int -> Bool
+operationProperty :: (Eq b) => (a -> a -> b) -> Fns -> (Value -> b) -> (a -> Expression Field Value NumberError Fns) -> a -> a -> Int -> Bool
 operationProperty operation opName unF f x y z = (unF valueF) == operation x y
                             where
                                 valueF :: Value
@@ -62,12 +70,20 @@ operationProperty operation opName unF f x y z = (unF valueF) == operation x y
                                 spreadSheet = createSpreadSheet [op opName [PExpr $ f x, PExpr $ f y] @@ field z]
 
 -- Tests the different operators
-plusIntPropery = testProperty "Plus Int" (operationProperty (+) Plus fromValueInt valueInt)
-minusIntPropery = testProperty "Minus Int" (operationProperty (-) Minus fromValueInt valueInt)
-timesIntPropery = testProperty "Times Int" (operationProperty (*) Times fromValueInt valueInt)
-divideIntNormalPropery = testProperty "Divide Int by /= 0" ((\x y -> y /= 0 ==> operationProperty div Divide fromValueInt valueInt x y))
+plusIntProperty = testProperty "Plus Int" (operationProperty (+) Plus fromValueInt valueInt)
+minusIntProperty = testProperty "Minus Int" (operationProperty (-) Minus fromValueInt valueInt)
+timesIntProperty = testProperty "Times Int" (operationProperty (*) Times fromValueInt valueInt)
+andBoolProperty = testProperty "And Bool" (operationProperty (&&) And fromValueBool valueBool)
+orBoolProperty = testProperty "Or Bool" (operationProperty (||) Or fromValueBool valueBool)
+ltIntProperty = testProperty "LT Int" (operationProperty (<) LT fromValueBool valueInt)
+leIntProperty = testProperty "LE Int" (operationProperty (<=) LE fromValueBool valueInt)
+gtIntProperty = testProperty "GT Int" (operationProperty (>) GT fromValueBool valueInt)
+geIntProperty = testProperty "GE Int" (operationProperty (>=) GE fromValueBool valueInt)
+divideIntNormalProperty = testProperty "Divide Int by /= 0" ((\x y -> y /= 0 ==> operationProperty div Divide fromValueInt valueInt x y))
 
-divideIntErrorPropery = testProperty "Divide Int by 0" ((\x y -> errorProperty Divide (DivideByZeroError "div 0") valueInt x 0 y))
+
+
+divideIntErrorProperty = testProperty "Divide Int by 0" ((\x y -> errorProperty Divide (DivideByZeroError "div 0") valueInt x 0 y))
 
 -- | Test whether an error is returned by a property
 errorProperty :: (Eq a) => Fns -> NumberError -> (a -> Expression Field Value NumberError Fns) -> a -> a -> Int -> Bool

@@ -67,6 +67,13 @@ fromValueInt :: Value -> Int
 fromValueInt (ValInt x) = x
 fromValueInt _          = error "Value is not an Int"
 
+valueBool :: Bool -> Expression field Value NumberError Fns
+valueBool = ExprLit . ValBool
+
+fromValueBool :: Value -> Bool
+fromValueBool (ValBool x) = x
+fromValueBool _          = error "Value is not a Boolean"
+
 intOpHandler :: (Int -> Int -> Eval field Value NumberError Fns Int) -> [Value] -> Eval field Value NumberError Fns Value
 intOpHandler op [ValInt x, ValInt y] = fmap ValInt (op x y)
 
@@ -124,16 +131,16 @@ instance (HackcelError NumberError field, Ord field, FieldRange field) => Apply 
                             y <- expectValue (args !! 1)
                             let xy = (x, y)
                             case xy of
-                                (ValInt x', ValInt y') -> return (ValBool $ x' <= y')
-                                (ValDouble x', ValDouble y') -> return (ValBool $ x' <= y')
+                                (ValInt x', ValInt y') -> return (ValBool $ x' < y')
+                                (ValDouble x', ValDouble y') -> return (ValBool $ x' < y')
                                 _ -> tError ErrorInvalidType
         apply  GT args =   do
                             x <- expectValue (head args)
                             y <- expectValue (args !! 1)
                             let xy = (x, y)
                             case xy of
-                                (ValInt x', ValInt y') -> return (ValBool $ x' >= y')
-                                (ValDouble x', ValDouble y') -> return (ValBool $ x' >= y')
+                                (ValInt x', ValInt y') -> return (ValBool $ x' > y')
+                                (ValDouble x', ValDouble y') -> return (ValBool $ x' > y')
                                 _ -> tError ErrorInvalidType
         apply  GE  args =  do
                                 ValBool gt <- apply GT args
