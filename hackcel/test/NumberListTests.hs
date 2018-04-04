@@ -31,7 +31,7 @@ fromLeft' (Right _)  = error "Left expected, got right"
 
 -- Creates a spreadsheet for numbers
 createSpreadSheet :: [(Field, Expression Field Value NumberError Fns)] -> HackcelState Field Value NumberError Fns
-createSpreadSheet exprs = createHackcel (Spreadsheet $ fromList (exprs))
+createSpreadSheet exprs = createHackcel $ Spreadsheet $ fromList exprs
 
 -- Test whether a value returns the correct response
 singleValueProperty :: (Eq a) => (Value -> a) -> (a -> Expression Field Value NumberError Fns) -> a -> Int -> Bool

@@ -35,7 +35,8 @@ prettyprint :: (Show field, Show value, Show error, Show app) => HackcelState fi
 prettyprint hackcel = foldr printField "" $ M.toAscList allFields
   where
     allFields = fields hackcel
-    printField (k, a) s = show k ++ ": " ++ printValue a ++ "\n" ++ s
+    printField (k, a) "" = show k ++ ": " ++ printValue a
+    printField (k, a) s  = show k ++ ": " ++ printValue a ++ "\n" ++ s
     printValue (expr, Nothing)  = "=" ++ show expr ++ ": <not calculated>"
     printValue (expr, Just val) = "=" ++ show expr ++ ": " ++ case fieldValue val of
       Left e -> show e
@@ -44,24 +45,21 @@ prettyprint hackcel = foldr printField "" $ M.toAscList allFields
 prettyprinter :: (Show field, Show value, Show error, Show app) => HackcelState field value error app -> IO ()
 prettyprinter = putStrLn . prettyprint
 
--- | Very ugly function, that calculates all results of all the expressions
 evalAll :: (HackcelError error field, Ord field, Apply field value error app)
         => HackcelState field value error app
         -> HackcelState field value error app
-evalAll s = case allFields of
-  []  -> s
-  f:_ -> helper f allFields
+evalAll s = evalFields s (M.keys $ fields s)
+
+evalFields :: (HackcelError error field, Ord field, Apply field value error app)
+           => HackcelState field value error app
+           -> [field]
+           -> HackcelState field value error app
+evalFields s [] = s
+evalFields s (f:fs) = evalFields s' fs
   where
-    allFields = M.keys $ fields s
-    initial f = EvalState s f []
+    (_, s') = runField f s
 
-    getAll :: (HackcelError error field, Ord field, Apply field value error app) => [field] -> Eval field value error app ()
-    getAll fs = Eval $ mapM_ (runEvalState.getValue') fs
-
-    -- To make sure the calculations continues, even if one field has an error.
-    getValue' f = Eval $ do (runEvalState.getValue) f; return ()
-                         `catchError` \_ -> return ()
-
-    helper f fs = finalHackcel
-      where
-        (_, EvalState finalHackcel _ _) = runEval (getAll fs) (initial f)
+isEvaluated :: (Ord field) => HackcelState field value error app -> field -> Bool
+isEvaluated (HackcelState m) f = case M.lookup f m of
+  (Just (_, Just _)) -> True
+  _ -> False
