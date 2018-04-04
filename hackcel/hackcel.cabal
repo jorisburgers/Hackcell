@@ -33,8 +33,8 @@ test-suite test
     , tasty-quickcheck
     , tasty-hunit >= 0.10
     , hackcel
-    , boxes
-    , ansi-terminal
+    , boxes >= 0.1.5 && < 2.0
+    , ansi-terminal >= 0.8.0.2 && < 1.0
 
 library
   exposed-modules:     Data.Hackcel.Core
@@ -53,7 +53,7 @@ library
                       , containers >=0.5.5 && <0.6
                       , mtl >= 2.2.1 && < 3.0
                       , uu-parsinglib >=2.9.1.1 && < 3.0
-                      , boxes >= 0.1.6 && < 2.0
-                      , ansi-terminal >= 0.8.0.2 && < 0.1
+                      , boxes >= 0.1.5 && < 2.0
+                      , ansi-terminal >= 0.8.0.2 && < 1.0
   hs-source-dirs:      src
   default-language:    Haskell2010
