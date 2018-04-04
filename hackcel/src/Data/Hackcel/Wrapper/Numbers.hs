@@ -28,7 +28,7 @@ data Fns
     | Divide
     deriving (Eq, Show, Ord)
 
-type Eval' field = Eval field Value NumberError Fns Value
+type Eval' field = Eval field Value NumberError Fns
 
 valueDouble :: Double -> Expression field Value NumberError Fns
 valueDouble = ExprLit . ValDouble

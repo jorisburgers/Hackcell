@@ -5,11 +5,12 @@ import Test.Tasty
 import NumberListTests
 import NumberTableTests
 import InvalidateTests
+import ParserTests
 
 main = defaultMain tests
 
 tests = testGroup "Tests" [
-        properties, 
+        properties,
         unitTests
     ]
 
@@ -18,4 +19,4 @@ properties = testGroup "Properties" [
         numberTableProperties
     ]
 
-unitTests = testGroup "Unit tests" [invalidateTests]
+unitTests = testGroup "Unit tests" [invalidateTests, parserTests]

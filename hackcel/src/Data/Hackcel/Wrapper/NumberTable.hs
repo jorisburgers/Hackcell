@@ -18,10 +18,12 @@ import Text.PrettyPrint.Boxes
 data Field = FieldInt (Int, Int)
             deriving (Eq, Ord)
 
+type Expression' = Expression Field Value NumberError Fns
+
 field :: (Int, Int) -> Field
 field = FieldInt
 
-fieldExpr :: (Int, Int) -> Expression Field Value NumberError Fns
+fieldExpr :: (Int, Int) -> Expression'
 fieldExpr = ExprField . field
 
 instance Show Field where
@@ -33,7 +35,7 @@ instance HackcelError NumberError Field where
     errorExpectedValueGotRange = ErrorUnexpectedValue
     errorExpectedRangeGotValue = ErrorUnexpectedRange
 
-listToSpreadSheet :: [[Expression Field Value NumberError Fns]] -> HackcelState Field Value NumberError Fns
+listToSpreadSheet :: [[Expression']] -> HackcelState Field Value NumberError Fns
 listToSpreadSheet xss   | not (sameLengths xss) = error "multidimensionale array not all the same size"
                         | otherwise             = createHackcel (Spreadsheet $ M.fromList $ concat $ fields xss 0 0)
                         where
@@ -197,7 +199,7 @@ interface = do setTitle "HackCell: the Spreadsheet program in Haskell"
                    Nothing -> return ()
                    Just hstate -> putStrLnS $ printNumberTable s
 
-    pExpr :: String -> Maybe (Expression Field Value NumberError Fns)
+    pExpr :: String -> Maybe (Expression')
     pExpr s = Just $ op Plus [fieldExpr (2,3), fieldExpr (1,5)]
 
     help :: StateT InterActiveState IO ()
