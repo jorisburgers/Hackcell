@@ -83,11 +83,11 @@ doubleDivision x y  |  y == 0 = tError $ DivideByZeroError "div 0"-- throw error
 compareOperator :: Ord a => (a -> a -> Bool) -> a -> a -> Value
 compareOperator op x y  = (ValBool (x `op` y))
 
-numberHandler :: (FieldRange field, Ord field, HackcelError NumberError field) 
-                => String 
-                -> [Argument field Value NumberError] 
+numberHandler :: (FieldRange field, Ord field, HackcelError NumberError field)
+                => String
+                -> [Argument field Value NumberError]
                 -> Eval field Value NumberError Value
-numberHandler "sum" p   =  do 
+numberHandler "sum" p   =  do
                         (f1, f2) <- expectRange (head p)
                         x <- getValue f1
                         case x of
@@ -117,7 +117,7 @@ numberHandler "gt" args =   do
                             let xy = (x, y)
                             case xy of
                                 (ValInt x', ValInt y') -> return (ValBool $ x' >= y')
-                                (ValDouble x', ValDouble y') -> return (ValBool $ x' <= y')
+                                (ValDouble x', ValDouble y') -> return (ValBool $ x' >= y')
                                 _ -> tError ErrorInvalidType
 numberHandler "ge"  args =  do
                                 ValBool gt <- numberHandler "gt" args
@@ -129,12 +129,10 @@ numberHandler "le"  args =  do
                                 return (ValBool $ lt || eq)
 numberHandler "if"  p   = do
                             cond <- expectValue (head p)
-                            tBranch <- expectValue (p !! 1)
-                            fBranch <- expectValue (p !! 2)
                             if cond == ValBool True then
-                                return tBranch
+                                expectValue (p !! 1)
                             else
-                                return fBranch
+                                expectValue (p !! 2)
 numberHandler name  p   =  do
                             x <- expectValue (head p)
                             y <- expectValue (p !! 1)
@@ -149,23 +147,23 @@ rangeHandler f f1 f2 = do
                         values <- mapM getValue (getRange f1 f2)
                         if not $ isUniformType $ traceShow values values then
                             tError $ ErrorInvalidType
-                        else 
+                        else
                             return $ f values
-                           
 
-sumInt :: (FieldRange field, Ord field, HackcelError NumberError field) => field -> field -> Eval field Value NumberError Value 
+
+sumInt :: (FieldRange field, Ord field, HackcelError NumberError field) => field -> field -> Eval field Value NumberError Value
 sumInt f1 f2 = rangeHandler s f1 f2
                 where
                     s values = ValInt $ foldr (+) 0 $ map fromInt values
                     fromInt (ValInt x) = x
 
-sumDouble :: (FieldRange field, Ord field, HackcelError NumberError field) => field -> field -> Eval field Value NumberError Value 
+sumDouble :: (FieldRange field, Ord field, HackcelError NumberError field) => field -> field -> Eval field Value NumberError Value
 sumDouble f1 f2 = rangeHandler s f1 f2
                 where
                     s values = ValDouble $ foldr (+) 0 $ map fromInt values
                     fromInt (ValDouble x) = x
 
-booleanHandler ::   String 
+booleanHandler ::   String
                 ->  [Value]
                 ->  Eval field Value NumberError Value
 booleanHandler "and" [(ValBool b1), (ValBool b2)]   = return (ValBool $ b1 && b2)
