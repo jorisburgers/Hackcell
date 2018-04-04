@@ -29,4 +29,5 @@ cabal.project.local
 *.toc
 *.pygtex
 *.pygstyle
+*.vrb
 !presentation/img/*.pdf
