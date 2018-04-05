@@ -31,3 +31,4 @@ cabal.project.local
 *.pygstyle
 *.vrb
 !presentation/img/*.pdf
+*.hcl
