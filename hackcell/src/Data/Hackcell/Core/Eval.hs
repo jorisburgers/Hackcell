@@ -1,6 +1,6 @@
 {-# language MultiParamTypeClasses, FlexibleContexts, GeneralizedNewtypeDeriving #-}
 
-module Data.Hackcel.Core.Eval (Eval(..), Apply, apply, HackcelState(..), EvalState(..), runField
+module Data.Hackcell.Core.Eval (Eval(..), Apply, apply, HackcellState(..), EvalState(..), runField
                               , Argument(..), getValue, runEval
                               , set) where
 
@@ -9,8 +9,8 @@ import qualified Data.Map.Strict as M
 import Control.Monad.Except
 import Control.Monad.State.Lazy
 
-import Data.Hackcel.Core.Spreadsheet
-import Data.Hackcel.Core.Expression
+import Data.Hackcell.Core.Spreadsheet
+import Data.Hackcell.Core.Expression
 
 import Data.Maybe (isJust)
 import Data.List (intercalate)
@@ -22,14 +22,14 @@ class Apply field value error app where
 type FieldsMap field value error app = M.Map field (Expression field value error app, Maybe (FieldResult field value error))
 
 -- | The state of a Hackcel spreadsheet.
-data HackcelState field value error app = HackcelState
+data HackcellState field value error app = HackcellState
   { fields :: FieldsMap field value error app
   -- ^ The fields of the spreadsheet, with their value or error and their dependencies.
   }
 
 -- | The state of an evaluation of a field.
 data EvalState field value error app = EvalState
-  { esHackcelState :: HackcelState field value error app
+  { esHackcellState :: HackcellState field value error app
   , esField :: field
   -- ^ The current field that is being calculated.
   , esStack :: [field]
@@ -47,23 +47,23 @@ runEval :: Eval field value e app a -> EvalState field value e app
         -> (Either e a, EvalState field value e app)
 runEval = runState . runExceptT . runEvalState
 
--- | Given a HackcelState and field, calculates the value of the specified field.
---   Results are memoized and stored in the returned HackcelState.
-runField :: (HackcelError error field, Ord field, Apply field value error app)
+-- | Given a HackcellState and field, calculates the value of the specified field.
+--   Results are memoized and stored in the returned HackcellState.
+runField :: (HackcellError error field, Ord field, Apply field value error app)
         => field
-        -> HackcelState field value error app
-        -> (Either error value, HackcelState field value error app)
-runField f hackcel = (x, finalHackcel)
+        -> HackcellState field value error app
+        -> (Either error value, HackcellState field value error app)
+runField f hackcell = (x, finalHackcell)
   where
-    initial = EvalState hackcel f []
-    (x, EvalState finalHackcel _ _) = runEval (getValue f) initial
+    initial = EvalState hackcell f []
+    (x, EvalState finalHackcell _ _) = runEval (getValue f) initial
 
 -- | Inserts a new field or updates a field in the spreadsheet
 --   Fields that depend on this field will be invalidated.
 set :: (Ord field)
-    => HackcelState field value error app
+    => HackcellState field value error app
     -> field
-    -> Expression field value error app -> HackcelState field value error app
+    -> Expression field value error app -> HackcellState field value error app
 set s f e = s {fields = fields''}
   where
     -- replaces field, if it is allready present.
@@ -95,19 +95,19 @@ data Argument field value error app
 
 -- | Finds the value of a field.
 --   Returns a memoized value if possible.
-getValue :: (HackcelError error field, Ord field, Apply field value error app)
+getValue :: (HackcellError error field, Ord field, Apply field value error app)
          => field
          -> Eval field value error app value
 getValue f = Eval $
   do
-    s1@EvalState { esHackcelState = HackcelState m, esField = currentField } <- get
+    s1@EvalState { esHackcellState = HackcellState m, esField = currentField } <- get
     case M.lookup f m of
       Nothing -> throwError (errorUnknownField f)
       Just (expr, memoized) -> do
         -- Field is found, it might be memoized
         if isJust memoized then
           -- Remove old value, to prevent strange behavior in case of circular references
-          put s1{ esHackcelState = HackcelState (M.insert f (expr, Nothing) m ) }
+          put s1{ esHackcellState = HackcellState (M.insert f (expr, Nothing) m ) }
         else
           return ()
 
@@ -116,22 +116,22 @@ getValue f = Eval $
 
         -- Add the current field as a new dependant
         let dependants' = if currentField `elem` dependants then dependants else currentField : dependants
-        EvalState { esHackcelState = HackcelState m' } <- get
+        EvalState { esHackcellState = HackcellState m' } <- get
         let m'' = M.insert f (expr, Just (FieldResult val dependants')) m'
         s <- get
-        put s{ esHackcelState = HackcelState m'' }
+        put s{ esHackcellState = HackcellState m'' }
         case val of
           Left e -> throwError e
           Right x -> return x
 
 -- | Evaluates the expression of some field. Assumes that the field is not memoized.
-evalExpression :: (HackcelError error field, Ord field, Apply field value error app)
+evalExpression :: (HackcellError error field, Ord field, Apply field value error app)
                => [field]
                -> field
                -> Eval field value error app (FieldResult field value error)
 evalExpression dependants fld = Eval $
   do
-    EvalState { esHackcelState = HackcelState m } <- get
+    EvalState { esHackcellState = HackcellState m } <- get
     case M.lookup fld m of
       Nothing -> throwError (errorUnknownField fld)
       Just (expr, _) ->
@@ -148,7 +148,7 @@ evalExpression dependants fld = Eval $
           -- Something went wrong.
           -- If the error was caused by a circular reference, there might already dependants of the current field.
           -- We thus need to find those, and preserve them.
-          s@EvalState{ esHackcelState = HackcelState m'} <- get
+          s@EvalState{ esHackcellState = HackcellState m'} <- get
           let additionalDeps = case M.lookup fld m' of
                                 -- Circular reference to the current field, dependants are already set
                                 Just (_, Just (FieldResult r deps)) -> deps
@@ -157,25 +157,25 @@ evalExpression dependants fld = Eval $
           -- Update the state with all dependants
           let res = FieldResult (Left e) (additionalDeps ++ dependants)
           let newm = M.insert fld (expr, Just res) m'
-          put $ s {esHackcelState = HackcelState newm}
+          put $ s {esHackcellState = HackcellState newm}
           return res)
   where
-    evalExpr' :: (HackcelError error field, Ord field, Apply field value error app)
+    evalExpr' :: (HackcellError error field, Ord field, Apply field value error app)
               => Expression field value error app -> Eval field value error app value
     evalExpr' (ExprLit val)  = return val
     evalExpr' (ExprField f2) = getValue f2
     evalExpr' (ExprApp fld args) = Eval $ do
       s <- get
-      let EvalState { esHackcelState = HackcelState m } =  s
+      let EvalState { esHackcellState = HackcellState m } =  s
       runEvalState $ apply fld (map toArgument args)
 
-    toArgument :: (HackcelError error field, Ord field, Apply field value error app)
+    toArgument :: (HackcellError error field, Ord field, Apply field value error app)
                => Parameter field value error app -> Argument field value error app
     toArgument (PRange fld1 fld2) = ARange fld1 fld2
     toArgument (PExpr e)          = AValue $ evalExpr' e
 
     -- | Pushes a field to the execution stack, and sets the given field as the current field in the EvalState.
-    pushStack :: (HackcelError error field, Ord field) => field
+    pushStack :: (HackcellError error field, Ord field) => field
                 -> Eval field value error app field
     pushStack fld2 = Eval $
       do
@@ -199,7 +199,7 @@ evalExpression dependants fld = Eval $
         m = minimum xs
 
     -- Pops a field from the execution stack and restores the current field in the EvalState to the given field.
-    popStack :: (HackcelError error field, Ord field)
+    popStack :: (HackcellError error field, Ord field)
              => field -> Eval field value error app ()
     popStack fld = Eval $
       do
@@ -210,23 +210,23 @@ evalExpression dependants fld = Eval $
           _ -> error "This should really not happen, the stack is empty when trying to pop"
 
 -- Given a set of dependants, updates the FieldResult of some field in the spreadsheet.
-updateResult :: (HackcelError error field, Ord field)
+updateResult :: (HackcellError error field, Ord field)
              => [field]
              -> field
              -> value -> Eval field value error app (FieldResult field value error)
 updateResult dependants fld val = Eval $
   do
-    s@EvalState { esHackcelState = HackcelState m } <- get
+    s@EvalState { esHackcellState = HackcellState m } <- get
     case M.lookup fld m of
       Nothing -> error "The impossible happened: updateResult should not be called with a field that does not exist"
       Just (expr, _) ->
         do
           let res = FieldResult (Right val) dependants
           let newm = M.insert fld (expr, Just res) m
-          put $ s {esHackcelState = HackcelState newm}
+          put $ s {esHackcellState = HackcellState newm}
           return res
 
--- Catch error lifted to the Eval monad. Note that we do not want to expose this to the users of Hackcel.
+-- Catch error lifted to the Eval monad. Note that we do not want to expose this to the users of Hackcell.
 catchErrorEval :: Eval field value error app a -> (error -> Eval field value error app a) -> Eval field value error app a
 catchErrorEval try catch = Eval $ runEvalState try `catchError` (runEvalState . catch)
 

@@ -1,0 +1,2 @@
+:set -isrc\Data\Hackcell\Core:-isrc\Data\Hackcell\Wrapper\.
+:l .\src\Data\Hackcell\Wrapper\NumberList.hs .\src\Data\Hackcell\Wrapper\Numbers.hs  .\src\Data\Hackcell\Core.hs 

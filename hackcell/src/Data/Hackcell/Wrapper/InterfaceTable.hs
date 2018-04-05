@@ -1,11 +1,11 @@
 {-# language  ScopedTypeVariables #-}
 module InterfaceTable where
 
-import Data.Hackcel.Core
-import Data.Hackcel.Wrapper.DSL
-import Data.Hackcel.Wrapper.Numbers
-import Data.Hackcel.Wrapper.NumberTable
-import Data.Hackcel.Wrapper.Parser
+import Data.Hackcell.Core
+import Data.Hackcell.Wrapper.DSL
+import Data.Hackcell.Wrapper.Numbers
+import Data.Hackcell.Wrapper.NumberTable
+import Data.Hackcell.Wrapper.Parser
 
 import qualified Data.Map.Strict as M
 import Data.Maybe
@@ -21,11 +21,11 @@ import Text.ParserCombinators.UU.Core
 import Text.ParserCombinators.UU.BasicInstances
 import Text.ParserCombinators.UU.Derived
 
-testSpreadsheet :: HackcelState Field Value NumberError Fns
+testSpreadsheet :: HackcellState Field Value NumberError Fns
 testSpreadsheet = listToSpreadSheet expressions
 
 data InterActiveState = InterActiveState {
-                          hstate :: Maybe (HackcelState Field Value NumberError Fns)
+                          hstate :: Maybe (HackcellState Field Value NumberError Fns)
                         , current :: Field
                         , topLeftPrint :: Field
                         , view :: View
@@ -33,7 +33,7 @@ data InterActiveState = InterActiveState {
 
 data View = Expr | Result
 
-interactiveTable :: HackcelState Field Value NumberError Fns -> IO ()
+interactiveTable :: HackcellState Field Value NumberError Fns -> IO ()
 interactiveTable st = interactive st parseField parseFE
 
 printNumberTable :: InterActiveState -> String
@@ -45,7 +45,7 @@ printNumberTable ias = maybe "" (render.printer) curstate
     curview = view ias
     FieldInt (l,t) = topLeftField
 
-    printer :: HackcelState Field Value NumberError Fns -> Box
+    printer :: HackcellState Field Value NumberError Fns -> Box
     printer state = (rowname <> (columnname // vcat left (
         map (\j -> foldr (\i b -> helper state i j <> b) nullBox [0..9]) [0..9]))
         ) // char ' ' // text ( curExpr state) // text (currResult state)
@@ -58,7 +58,7 @@ printNumberTable ias = maybe "" (render.printer) curstate
                          ++ " = " ++ show v
                        _    -> " = "
 
-    helper :: HackcelState Field Value NumberError Fns -> Int -> Int -> Box
+    helper :: HackcellState Field Value NumberError Fns -> Int -> Int -> Box
     helper state i j = let f = FieldInt (i + l,j + t) in
       case M.lookup f (fields state) of
         Just (e, Just v) -> case curview of

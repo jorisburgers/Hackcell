@@ -1,4 +1,4 @@
-# Revision history for hackcel
+# Revision history for hackcell
 
 ## 0.1.0.0  -- YYYY-mm-dd
 

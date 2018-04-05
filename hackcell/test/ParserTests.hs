@@ -3,10 +3,10 @@ module ParserTests where
 import Test.Tasty
 import Test.Tasty.QuickCheck
 
-import Data.Hackcel.Core
-import Data.Hackcel.Wrapper.Parser
-import Data.Hackcel.Wrapper.Numbers
-import Data.Hackcel.Wrapper.NumberTable
+import Data.Hackcell.Core
+import Data.Hackcell.Wrapper.Parser
+import Data.Hackcell.Wrapper.Numbers
+import Data.Hackcell.Wrapper.NumberTable
 
 doesParse :: String -> Bool
 doesParse = snd . parseExpression
@@ -34,11 +34,11 @@ valid = testGroup "Parse valid expressions" $ fmap shouldParse
   , "!!!!!!!!!2"
   , "1 ? 2 : 3"
   , "1 ? 2 ? 3 : 4 : 5 ? 6 : 7"
-  , "Sum(A1C10)"
-  , "Sum(A1C10) + Sum(X9Y10)"
-  , "true"
-  , "true == true && false == false ? true : false"
-  , "true != false"
+  , "Sum(A1;C10)"
+  , "Sum(A1;C10) + Sum(X9;Y10)"
+  , "True"
+  , "True == True && False == False ? True : False"
+  , "True != False"
   , "1 + 2 * 3"
   , "1 * 2 + 3"
   ]

@@ -77,7 +77,7 @@ data NumberError    = RecursionError [Field]
   		\frametitle{Wrapper - Error}
 		  		\begin{minted}{haskell}
 
-class HackcelError t field | t -> field where
+class HackcellError t field | t -> field where
   errorUnknownField :: field -> t
   errorRecursion :: [field] -> t
   errorExpectedValueGotRange :: t

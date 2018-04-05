@@ -16,13 +16,94 @@
 	\maketitle
 	
 	\section{Domain and problem}
-	%vA description of your domain and problem and how they translate to code.
-	% See the proposal, and update what is still relevant
-	% WHy abstraction in the core
+	The aim of the project is to provide a library for spreadsheet calculations in Haskell. A spreadsheet is an interactive program where users can perform calculations. It consists of cells, where values or formulas are stored. The cells can be displayed, and will show either the value it contains or the result of the formula it contains. Formulas can reference other cells. Furthermore, a range of cells can be provided as argument of a function, for example to calculate the sum or average of a range of cells. 
+	
+	A common spreadsheet application is Microsoft Excel, where the cells are stored in a two dimensional sheet and a file can contain multiple sheets.
+	
+	\subsection{Problem description}
+	The problem that Hackcell will solve is the (incremental) calculation of spreadsheets. The library will provide the following functionality:
+	\begin{itemize}
+		\item The ability to allow arbitrary data types in the same spreadsheet, for values, fields and errors. Users can use their own types and are not limited to a number of predefined types.
+		\item Users can specify methods that can be used in the expressions.
+		\item Remove the limitation of the number of dimensions. Most spreadsheet programs give the user a limited amount of dimensions to work with. We want to remove this restriction and let a user define a spreadsheet of arbitrary size and dimensions.
+		\item Detection of cyclic references. In a spreadsheet, cells can reference other cells and this can cause a cycle. This cycle will be detected, preventing an endless loop.
+		\item The possibility to allow users to update specific cells without the need to recompute the entire spreadsheet. The only cells that will be updated are those cells that depend on the changed cell.
+		\item The only values that are computed are the values that need to be computed.
+	\end{itemize}	
 	
 	\section{Concepts and techniques}
-	%The most important concept and techniques used throughout the code.
-	% See the status report
+	Our project is split in two parts: the core, which implements a generic interface to work with spreadsheets, and a wrapper, which is not generic but practically demonstrates the functionality of the core with an interactive command line interface.
+	
+	In the core we implement the data types, where we do not specify what the types of the field, the values and the errors should be. The implementation should specify this further.
+	
+	All the data types that are used in the core can be found in listing \ref{listing:datatypes}. \texttt{Spreadsheet} is used to initialize the \texttt{HackcellState}. The \texttt{HackcellState} saves the expressions and results of all the fields.
+	
+	\texttt{Eval} is a wrapper with an Except Transformer applied to the State monad. With this we can use a state, that is always passed and the result of the state monad can then either be an error or the normal result. This lets us use all the normal state and error functionality of \texttt{Control.Monad.Except} and \texttt{Control.Monad.State} modules. We put a data type around it, such that users cannot access the state internally. The state that is passed around is the \texttt{EvalState}. This contains the \texttt{HackcellState}, the field that is being calculated (which changes when evaluating a reference to some other field) and the stack of all the fields that are being calculated. The stack is used to detect circular dependencies.
+	
+	The \texttt{Apply} type class contains the \texttt{apply} function which is used to evaluate function calls. A function call contains a list of parameters that are either an expression or a range. The latter can be used to implement the \texttt{SUM} method from Excel. Since we do not want to pass an expression to the \texttt{app} function, we instead created a new data type, \texttt{Argument}, which is either a value (in the \texttt{Eval} monad) or a range. Given that values are passed in the \texttt{Eval} monad, one can implement lazy operators such an if-then-else construct.
+
+	\texttt{FieldResult} is used to save the results of calculations, either an error or a value. We also store which other fields depend on the result, so that we can recalculate them, if the current field is changed.
+	
+	\subsection{Dependency tracking}
+	We store a list of dependant fields in \texttt{FieldResult}. Every time that we evaluate an expression of field $x$ that depends on some field $y$, we add the $x$ to the dependants list of $y$. This gives a dependency graph which we use when a field changes. When the value of field $y$ is modified, the value of $x$ is invalidated, that is, the memoized value is removed. The dependants are recursively invalidated. Their values are not immediately re-evaluated, but are only evaluated when needed.
+	
+	\subsection{Monadic interface for function definitions}
+	Functions to be used in expression can be defined using the \texttt{Eval} monad.
+	
+	% TODO
+	
+	\begin{listing}
+		\begin{minted}[
+		frame=lines,
+		framesep=2mm,
+		baselinestretch=0.5,
+		fontsize=\footnotesize,
+		linenos
+		]{haskell}
+		newtype Spreadsheet field value err =
+		Spreadsheet { unSpreadsheet :: M.Map field (Expression field value err) }
+		
+		type App field value err = String -> [Argument field value err] -> Eval field value err value
+		data HackcelState field value err = HackcelState
+		{ fields :: M.Map field (Expression field value err, Maybe (FieldResult field value err))
+		, app :: App field value err
+		}
+		
+		newtype Eval field value err a = Eval {
+		runEvalState :: ExceptT err (State (EvalState field value err)) a
+		} deriving (Monad, Functor, Applicative)
+		
+		data EvalState field value err = EvalState
+		{ esHackcellState :: HackcellState field value err
+		, esField :: field
+		, esStack :: [field]
+		}
+		
+		data Argument field value err
+		= AValue (Eval field value err value)
+		| ARange field field
+		
+		data Parameter field value err  = PExpr (Expression field value err)
+		| PRange field field
+		
+		data FieldResult field value err = FieldResult
+		{ fieldValue :: Either err value
+		, fieldDependants :: [field] }
+		
+		class Hackcellerror t field | t -> field where
+		errorUnknownField :: field -> t
+		errorRecursion :: [field] -> t
+		errorExpectedValueGotRange :: t
+		errorExpectedRangeGotValue :: t
+		
+		data Expression field value err
+		= ExprField (field)
+		| ExprLit value
+		| ExprApp String [Parameter field value err]
+		\end{minted}
+		\caption{The data types used in the core}
+		\label{listing:datatypes}
+	\end{listing}
 	
 	\section{Results}
 	%results you have achieved, including examples of use of your library or application.
@@ -34,13 +115,14 @@
 \\\\	
 	Expressions in our language are untyped. In the wrapper, we throw an error when evaluating expressions that are not well typed. Instead, one could also choose to do implicit coercions. It is not possible to add a static type system, without modifying the core. It was a design decision to not add a static type system.
 \\\\
-	The code in the core has a lot of \texttt{field value error app} occurrences, to instantiate the type arguments of our data types. This clutters the code. Alternatives would be to use a single type with a type class that has associated types. Those associated types would replace the current type arguments. Furthermore, we require that three type classes hold on the type arguments, namely \texttt{Ord field}, \texttt{HackcelError error field} and \texttt{Apply field value error app}. We could replace those three by a single type class, but that would make the library less flexible. When one would first want to fix the \texttt{field} and \texttt{error} types, the \texttt{HackcelError} type class could already be implemented. Replacing those type classes by a single type class would not allow this.
+	The code in the core has a lot of \texttt{field value error app} occurrences, to instantiate the type arguments of our data types. This clutters the code. Alternatives would be to use a single type with a type class that has associated types. Those associated types would replace the current type arguments. Furthermore, we require that three type classes hold on the type arguments, namely \texttt{Ord field}, \texttt{HackcellError error field} and \texttt{Apply field value error app}. We could replace those three by a single type class, but that would make the library less flexible. When one would first want to fix the \texttt{field} and \texttt{error} types, the \texttt{HackcellError} type class could already be implemented. Replacing those type classes by a single type class would not allow this.
 \\\\
 The initial idea was to allow modules to be chained together. This means that a programmer would be provided with a \texttt{Number} module, a \texttt{Boolean} module, a \texttt{String} module and other modules. The programmer could chain these modules to allow for his or her needs and easily combine an existing module with a custom module. In the current implementation of the Wrapper, this is not possible, because it would cause cyclic imports in Haskell. With a change in the Wrapper implementation, it would be possible to allow chaining of modules, but all the types need to be in the same module. This could be a problem if a user wants to add possible values without access to the code of the module.
 \\\\
 A \texttt{Range} is defined to have a lower bound and an upper bound in the \texttt{Core}. The reason for this implementation is that the \texttt{Core} doesn't know about the internal structure of a field. Given a lower bound and an upper bound, a Wrapper can decide how the range should be handled. In case of \texttt{Sum}, this is easy. There, every dimension of fields can be mapped to a list of fields. If SQL like queries were to be implemented, this is not the case and the internal structure should remain visible. In that case, the programmer of the Wrapper can decide their own structure. If another representation, like an \texttt{Enum} was chosen, this possible representation is lost.
 \\\\
 The project is eventually designed as was intended in the project proposal. Almost all the requested proposals are implemented in the final solution. The schedule, as designed in the proposal, was not always strictly followed, but in the end, all the features that were envisioned are present.
+
 	%Reflection about what went well or better than expected, and what problems you encountered.
 	% - A field that doesn't exist yet, cannot have any dependents.
 	% - Core has not a really functional way of programming

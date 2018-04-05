@@ -43,7 +43,7 @@ newtype Spreadsheet field value err =
   Spreadsheet { unSpreadsheet :: M.Map field (Expression field value err) }
      
 type App field value err = String -> [Argument field value err] -> Eval field value err value
-data HackcelState field value err = HackcelState
+data HackcellState field value err = HackcellState
   { fields :: M.Map field (Expression field value err, Maybe (FieldResult field value err))
   , app :: App field value err
   }
