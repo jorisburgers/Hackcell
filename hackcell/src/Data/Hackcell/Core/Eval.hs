@@ -24,7 +24,7 @@ class Apply field value error app where
 type FieldsMap field value error app = M.Map field (Expression field value error app, Maybe (FieldResult field value error))
 
 -- | The state of a Hackcel spreadsheet.
-data HackcellState field value error app = HackcellState
+newtype HackcellState field value error app = HackcellState
   { fields :: FieldsMap field value error app
   -- ^ The fields of the spreadsheet, with their value or error and their dependencies.
   }

@@ -60,46 +60,47 @@
 		fontsize=\footnotesize,
 		linenos
 		]{haskell}
-		newtype Spreadsheet field value err =
-		Spreadsheet { unSpreadsheet :: M.Map field (Expression field value err) }
-		
-		type App field value err = String -> [Argument field value err] -> Eval field value err value
-		data HackcelState field value err = HackcelState
-		{ fields :: M.Map field (Expression field value err, Maybe (FieldResult field value err))
-		, app :: App field value err
-		}
-		
-		newtype Eval field value err a = Eval {
-		runEvalState :: ExceptT err (State (EvalState field value err)) a
-		} deriving (Monad, Functor, Applicative)
-		
-		data EvalState field value err = EvalState
-		{ esHackcellState :: HackcellState field value err
-		, esField :: field
-		, esStack :: [field]
-		}
-		
-		data Argument field value err
-		= AValue (Eval field value err value)
-		| ARange field field
-		
-		data Parameter field value err  = PExpr (Expression field value err)
-		| PRange field field
-		
-		data FieldResult field value err = FieldResult
-		{ fieldValue :: Either err value
-		, fieldDependants :: [field] }
-		
-		class Hackcellerror t field | t -> field where
-		errorUnknownField :: field -> t
-		errorRecursion :: [field] -> t
-		errorExpectedValueGotRange :: t
-		errorExpectedRangeGotValue :: t
-		
-		data Expression field value err
-		= ExprField (field)
-		| ExprLit value
-		| ExprApp String [Parameter field value err]
+newtype Spreadsheet field value err app =
+  Spreadsheet { unSpreadsheet :: M.Map field (Expression field value err app) }
+
+class Apply field value err app where
+  apply :: app -> [Argument field value err app] -> Eval field value err app value
+
+newtype HackcellState field value err app = HackcellState
+  { fields :: FieldsMap field value err app }
+
+newtype Eval field value err app a = Eval {
+  runEvalState :: ExceptT err (State (EvalState field value err app)) a
+  } deriving (Monad, Functor, Applicative)
+
+data EvalState field value err = EvalState
+  { esHackcellState :: HackcellState field value err app
+  , esField :: field
+  , esStack :: [field]
+  }
+
+data Argument field value err
+  = AValue (Eval field value err value)
+  | ARange field field
+
+data Parameter field value err
+  = PExpr (Expression field value err)
+  | PRange field field
+
+data FieldResult field value err = FieldResult
+  { fieldValue :: Either err value
+  , fieldDependants :: [field] }
+
+class Hackcellerror t field | t -> field where
+  errorUnknownField :: field -> t
+  errorRecursion :: [field] -> t
+  errorExpectedValueGotRange :: t
+  errorExpectedRangeGotValue :: t
+
+data Expression field value err app
+  = ExprField field
+  | ExprLit value
+  | ExprApp app [Parameter field value err]
 		\end{minted}
 		\caption{The data types used in the core}
 		\label{listing:datatypes}
