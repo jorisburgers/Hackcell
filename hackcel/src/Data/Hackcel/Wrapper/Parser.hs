@@ -27,7 +27,7 @@ pInt :: Parser Int
 pInt = read <$> pListNonEmpty pDigit
 
 pBool :: Parser Bool
-pBool = True <$ pToken "true" <<|> False <$ pToken "false"
+pBool = True <$ pToken "True" <<|> False <$ pToken "False"
 
 pDecimals :: Parser Double
 pDecimals = (\digits -> read digits / (10 ^^ length digits)) <$> pListNonEmpty pDigit
@@ -86,10 +86,10 @@ pApl = ExprApp <$> operators <*
   where
     operators :: Parser Fns
     operators = foldr (\ap b -> ap <$ pToken (show ap) <|> b) pFail
-      [Plus, Minus, Times, Divide]
+      [Plus, Minus, Times, Divide, If, LT, LE, GT, GE, NE, Not, EQ, And, Or]
 
 pFieldRange :: Parser (Field, Field)
-pFieldRange = (,) <$> pField <*> pField
+pFieldRange = (,) <$> pField <* pToken ";" <*> pField
 
 pSum :: Parser Expression'
 pSum = (\(f1, f2) -> ExprApp Sum [PRange f1 f2]) <$ pToken "Sum" <* pSpaces <* pToken "(" <*> pFieldRange <* pToken ")"
@@ -147,3 +147,12 @@ parseFile :: String -> ([(Field, Expression')], Bool)
 parseFile str = (file, null errors)
   where
     (file, errors) = parse ((,) <$> pFile <*> pEnd) $ createStr (LineCol 0 0) str
+
+-- pFE :: Parser (Field, Expression')
+-- pFE = \x y -> (y,x) <$> pExpression <* pToken "@" <*> pField
+--
+-- parseFE :: String -> Maybe (Field, Expression')
+-- parseFE str | null errors = Just fe
+--             | otherwise = Nothing
+--   where
+--     (fe, errors) = parse ((,) <$> pFE <*> pEnd) $ createStr (LineCol 0 0) str

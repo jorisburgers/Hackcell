@@ -13,7 +13,7 @@ data Parameter field value error app
 instance (Show field, Show value, Show error, Show app) => Show (Parameter field value error app)
   where
     show (PExpr expr) = show expr
-    show (PRange f1 f2) = "[" ++ show f1 ++ ":" ++ show f2 ++ "]"
+    show (PRange f1 f2) = show f1 ++ ";" ++ show f2
 
 -- | An error type should at least provide the error messages
 --   that are member of this type class.

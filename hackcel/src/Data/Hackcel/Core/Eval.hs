@@ -72,7 +72,7 @@ set s f e = s {fields = fields''}
       -- Invalidate the dependants of this field
       Just (_, Just (FieldResult _ dependants)) -> foldr (flip invalidate) fields' dependants
       -- New field, or existing field that was not calculated yet
-      Nothing -> fields'
+      _ -> fields'
 
 -- | Invalidates the given field and invalidates the dependants of the field
 invalidate :: (Ord field)

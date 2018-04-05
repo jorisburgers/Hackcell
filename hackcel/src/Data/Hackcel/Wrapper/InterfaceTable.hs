@@ -101,6 +101,7 @@ interface = do setTitle "HackCell: the Spreadsheet program in Haskell"
                             \ argument"; startProgram
                    ' ':xs -> loadfile xs
                    xs  -> do unknownArg ('l':xs); startProgram
+       'n':_  -> newFile
        xs     -> do unknownArg xs; startProgram
 
     mainProgram :: Bool -> StateT InterActiveState IO ()
@@ -116,6 +117,7 @@ interface = do setTitle "HackCell: the Spreadsheet program in Haskell"
                               \ argument"; mainProgram False
                      ' ':xs -> loadfile xs
                      xs  -> do unknownArg ('l':xs); mainProgram False
+         'n' -> newFile
          'S' -> do
             afn <- liftIO getLine
             case afn of
@@ -170,8 +172,22 @@ interface = do setTitle "HackCell: the Spreadsheet program in Haskell"
       s <- get
       let news = set (fromJust (hstate s)) (current s) e
       let (_, runnews) = runField (current s) news
-      put (s {hstate = Just runnews})
+      let runnews' = evalAll runnews
+      put (s {hstate = Just runnews'})
       refresh
+
+    newFile :: StateT InterActiveState IO ()
+    newFile = do
+      let sprdsht = Spreadsheet (M.fromList [])
+      s <- get
+      let newSH = evalAll $ createHackcel sprdsht
+      let fileloc = "untitled"
+      put (s {hstate = Just newSH, file = Just fileloc })
+      liftIO $ setTitle ("HackCell: the Spreadsheet program in Haskell: "
+         ++ fileloc)
+      refresh
+      putStrLnS $ "Openend a new file"
+      mainProgram False
 
     loadfile :: String -> StateT InterActiveState IO ()
     loadfile fileloc = do
@@ -215,6 +231,7 @@ interface = do setTitle "HackCell: the Spreadsheet program in Haskell"
           \Helper for the HackCell 2D program.\n\
           \Commands: 'h' for this helper\n\
           \          'l file' to load a file \n\
+          \          'n' for a new file\n\
           \          'q' to quit"
 
     helpMain :: StateT InterActiveState IO ()
