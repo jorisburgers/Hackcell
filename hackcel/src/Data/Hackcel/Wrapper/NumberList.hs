@@ -20,12 +20,12 @@ import Data.Map.Strict hiding (foldl, map, foldr)
 import Text.Read
 
 -- | Describes a field in a single dimension
-data Field = FieldInt Int -- ^Constructs a single field
+data Field = Field Int -- ^ Constructs a single field
             deriving (Eq, Ord)
 
 -- | Creates a field based on the given Int
 field :: Int -> Field
-field = FieldInt
+field = Field
 
 -- | Given an Int, creates an expression of that field
 fieldExpr :: Int -> Expression Field Value NumberError Fns
@@ -36,10 +36,10 @@ fieldParam :: Int -> Parameter Field Value NumberError Fns
 fieldParam = PExpr . fieldExpr
 
 instance Show Field where
-    show (FieldInt n) = show n
+    show (Field n) = show n
 
 instance FieldRange Field where
-    getRange (FieldInt x) (FieldInt y) = map FieldInt [x..y]
+    getRange (Field x) (Field y) = map Field [x..y]
 
 instance HackcelError NumberError Field where
     errorUnknownField field = UnknownFieldError $ "Unknown field error at index " ++ show field

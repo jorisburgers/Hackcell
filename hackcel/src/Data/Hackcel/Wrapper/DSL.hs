@@ -1,15 +1,15 @@
 {-# language TupleSections #-}
 -- | Provide a number of helper functions to easily write Expressions.
-module Data.Hackcel.Wrapper.DSL(
-        (@@)
+module Data.Hackcel.Wrapper.DSL
+    (   (@@)
     ,   getValues
     ,   FieldRange
     ,   getRange
     ,   TypeEq
     ,   typeEq
     ,   isUniformType
-
-) where
+    )
+where
 
 import Data.Hackcel.Core
 import Data.Map.Lazy

@@ -53,20 +53,20 @@ type Eval' field = Eval field Value NumberError Fns
 
 -- | The possible operators on `Value`
 data Fns
-    = Plus -- ^Adds two Ints or two Doubles
-    | Minus -- ^Subtracts two Ints or two Doubles
-    | Times -- ^Multiply two Ints or two Doubles
-    | Divide -- ^Divide two Ints or two Doubles
-    | Sum -- ^Sums a range of Ints or a range of Doubles
-    | If -- ^If the given condition is True, the True branch is returned, otherwise, the false branch is returned
+    = Plus -- ^ Adds two Ints or two Doubles
+    | Minus -- ^ Subtracts two Ints or two Doubles
+    | Times -- ^ Multiply two Ints or two Doubles
+    | Divide -- ^ Divide two Ints or two Doubles
+    | Sum -- ^ Sums a range of Ints or a range of Doubles
+    | If -- ^ If the given condition is True, the True branch is returned, otherwise, the false branch is returned
     | LT -- ^ Checks if the first parameter is less than the second parameter
     | LE -- ^ Checks if the first parameter is less than or equals the second parameter
     | GT -- ^ Checks if the first parameter is greater than the second parameter
     | GE -- ^ Checks if the first parameter is greater than or equal the second parameter
     | NE -- ^ Checks if two parameters are not equal to each other
-    | Not -- ^Inverts the given boolean
-    | EQ -- ^Check if two parameters are equal to one another, False if they are a different data type or have different values
-    | And -- ^Checks if both parameters are True
+    | Not -- ^ Inverts the given boolean
+    | EQ -- ^ Check if two parameters are equal to one another, False if they are a different data type or have different values
+    | And -- ^ Checks if both parameters are True
     | Or -- ^ Checks if one of the parameters is True
     deriving (Eq, Show, Ord)
 
