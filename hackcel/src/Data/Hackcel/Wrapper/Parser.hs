@@ -1,6 +1,9 @@
 {-# language FlexibleContexts, RankNTypes, TupleSections #-}
-
-module Data.Hackcel.Wrapper.Parser where
+-- | Parses Expressions and Files for `NumberTable` 	
+module Data.Hackcel.Wrapper.Parser(
+        parseFile
+    ,   parseExpression
+) where
 
 import Prelude hiding (LT, GT, EQ)
 
@@ -132,6 +135,8 @@ pIfThenElse = f <$> pOr <*> ((\e1 e2 -> Just (e1, e2)) <$ pSpaces <* pToken "?" 
 pExpression :: Parser Expression'
 pExpression = pSpaces *> pIfThenElse <* pSpaces
 
+-- | Parses a single expression. and returns an expression and a Bool, which is True if the parsing was sucessfull,
+-- False if the error was automatically corrected
 parseExpression :: String -> (Expression', Bool)
 parseExpression str = (expr, null errors)
   where
@@ -143,6 +148,8 @@ pLine = (,) <$> pField <* pToken ": =" <*> pExpression <* pToken ":" <* pMunch (
 pFile :: Parser [(Field, Expression')]
 pFile = pListSep (pToken "\n") pLine
 
+-- | Parses a single file to a list of (Field, Expression') and a Bool, which is True if the parsing was succesfull and False
+-- if error correction was applied
 parseFile :: String -> ([(Field, Expression')], Bool)
 parseFile str = (file, null errors)
   where

@@ -7,7 +7,6 @@ synopsis:            A monadic spreadsheet library in Haskell
 -- description:
 homepage:            https://github.com/jorisburgers/Hackcel
 license:             AllRightsReserved
-license-file:        LICENSE
 author:              Joris Burgers, Ivo Gabe de Wolff, Lars van den Haak
 maintainer:          j.j.f.burgers@students.uu.nl; ivogabe@ivogabe.nl; l.b.vandenhaak@gmail.com
 -- copyright:

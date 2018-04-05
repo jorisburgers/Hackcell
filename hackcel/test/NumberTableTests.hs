@@ -10,6 +10,7 @@ import Data.Hackcel.Wrapper.Numbers
 
 import Data.Map.Strict hiding (foldl, map)
 
+numberTableProperties :: TestTree
 numberTableProperties = testGroup "Number Table Properties" [
         singleIntValueProperty,
         singleDoubleValueProperty
@@ -35,7 +36,9 @@ singleValueProperty unF f x y z = (unF valueF) == x
                                 spreadSheet = createSpreadSheet [[f x @@ field (y, z)]]
 
 -- Test the insertion of an Int
+singleIntValueProperty :: TestTree
 singleIntValueProperty = testProperty "Single int insertion and retrieval" $ singleValueProperty fromValueInt valueInt
 
 -- Test the insertion of a Double
+singleDoubleValueProperty :: TestTree
 singleDoubleValueProperty = testProperty "Single int insertion and retrieval" $ singleValueProperty fromValueDouble valueDouble

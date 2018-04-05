@@ -1,5 +1,19 @@
 {-# language FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
-module Data.Hackcel.Wrapper.Numbers where
+-- | Describes a wrapper that describes numbers and booleans and computations on these.
+-- This wrapper is not dependant on a specific field
+module Data.Hackcel.Wrapper.Numbers(
+        Value(..)
+    ,   NumberError(..)
+    ,   Fns(..)
+    ,   valueInt
+    ,   valueDouble
+    ,   valueBool
+    ,   fromValueInt
+    ,   fromValueDouble
+    ,   fromValueBool
+    ,   op
+
+) where
 
 import Data.Hackcel.Core
 import Data.Hackcel.Wrapper.DSL
@@ -9,11 +23,10 @@ import Control.Monad.Except
 import Data.Maybe
 import Prelude hiding (sum, LT, GT, EQ)
 
-import Debug.Trace
-
-data Value  = ValInt Int
-            | ValDouble Double
-            | ValBool Bool
+-- | Describes a value that can be either an Int, a Double of a Bool.
+data Value  = ValInt Int -- ^Constructor for Int
+            | ValDouble Double -- ^Constructof for Double
+            | ValBool Bool -- ^Constructor for Bool
             deriving (Eq)
 
 instance Show Value where
@@ -21,12 +34,13 @@ instance Show Value where
   show (ValDouble x) = show x
   show (ValBool x)   = show x
 
-data NumberError    = RecursionError String
-                    | UnknownFieldError String
-                    | DivideByZeroError String
-                    | ErrorUnexpectedValue
-                    | ErrorUnexpectedRange
-                    | ErrorInvalidType
+-- | The error that can be thrown for numbers and booleans
+data NumberError    = RecursionError String -- ^Thrown when the computation is recursive
+                    | UnknownFieldError String -- ^Thrown when a unkown field is referenced
+                    | DivideByZeroError String -- ^Thrown when a division by 0 is computed
+                    | ErrorUnexpectedValue -- ^Thrown when a value is expected, but a range is gotten
+                    | ErrorUnexpectedRange -- ^Thrown when a range is expected, but a value is gotten
+                    | ErrorInvalidType -- ^Thrown when there is a type mismatch in `apply`
                     deriving (Show, Eq)
 
 instance TypeEq Value where
@@ -37,45 +51,52 @@ instance TypeEq Value where
 
 type Eval' field = Eval field Value NumberError Fns
 
+-- | The possible operators on `Value`
 data Fns
-    = Plus
-    | Minus
-    | Times
-    | Divide
-    | Sum
-    | If
-    | LT
-    | LE
-    | GT
-    | GE
-    | NE
-    | Not
-    | EQ
-    | And
-    | Or
+    = Plus -- ^Adds two Ints or two Doubles
+    | Minus -- ^Subtracts two Ints or two Doubles
+    | Times -- ^Multiply two Ints or two Doubles
+    | Divide -- ^Divide two Ints or two Doubles
+    | Sum -- ^Sums a range of Ints or a range of Doubles
+    | If -- ^If the given condition is True, the True branch is returned, otherwise, the false branch is returned
+    | LT -- ^ Checks if the first parameter is less than the second parameter
+    | LE -- ^ Checks if the first parameter is less than or equals the second parameter
+    | GT -- ^ Checks if the first parameter is greater than the second parameter
+    | GE -- ^ Checks if the first parameter is greater than or equal the second parameter
+    | NE -- ^ Checks if two parameters are not equal to each other
+    | Not -- ^Inverts the given boolean
+    | EQ -- ^Check if two parameters are equal to one another, False if they are a different data type or have different values
+    | And -- ^Checks if both parameters are True
+    | Or -- ^ Checks if one of the parameters is True
     deriving (Eq, Show, Ord)
 
+-- | Given an Operator and a list of parameters, return the expression
 op :: Fns -> [Parameter field Value NumberError Fns] -> Expression field Value NumberError Fns
 op name es = ExprApp name es
 
+-- | Creates an expression from a Double
 valueDouble :: Double -> Expression field Value NumberError Fns
 valueDouble = ExprLit . ValDouble
 
+-- | Creates a Double from a Value
 fromValueDouble :: Value -> Double
 fromValueDouble (ValDouble x)   = x
--- TODO: Error in the Eval monad
 fromValueDouble _               = error "Value is not a Double"
 
+-- | Creates a Value from an Int
 valueInt :: Int -> Expression field Value NumberError Fns
 valueInt = ExprLit . ValInt
 
+-- | Creates an Int from a  Value
 fromValueInt :: Value -> Int
 fromValueInt (ValInt x) = x
 fromValueInt _          = error "Value is not an Int"
 
+-- | Creates a Value from a Bool
 valueBool :: Bool -> Expression field Value NumberError Fns
 valueBool = ExprLit . ValBool
 
+-- | Creates a Bool from a Value
 fromValueBool :: Value -> Bool
 fromValueBool (ValBool x) = x
 fromValueBool _          = error "Value is not a Boolean"
