@@ -58,11 +58,11 @@ pField = f <$> pSome pFieldColumnChar <*> pInt
 
 -- Parses an expression of a left associative infix binary operator
 pOperatorLeft :: Parser Fns -> Parser Expression' -> Parser Expression'
-pOperatorLeft token p = (\left right -> right left) <$> p <* pSpaces <*> pRight
+pOperatorLeft token p = (\left right -> right left) <$> p <*> pRight
   where
     pRight :: Parser (Expression' -> Expression')
-    pRight = (\fn arg rest left -> rest $ ExprApp fn [PExpr left, PExpr arg]) <$ pSpaces <*> token <* pSpaces <*> p <*> pRight
-        <<|> pReturn id
+    pRight = pSpaces *> ((\fn arg rest left -> rest $ ExprApp fn [PExpr left, PExpr arg]) <$ pSpaces <*> token <* pSpaces <*> p <*> pRight
+        <<|> pReturn id)
 
 pOperator :: Parser Fns -> Parser Expression' -> Parser Expression'
 pOperator token p = f <$> p <*> ((\fn e -> Just (fn, e)) <$ pSpaces <*> token <* pSpaces <*> p <<|> pReturn Nothing)
@@ -124,7 +124,7 @@ pOr :: Parser Expression'
 pOr = pOperatorLeft (Or <$ pToken "||") pAnd
 
 pIfThenElse :: Parser Expression'
-pIfThenElse = f <$> pOr <*> ((\e1 e2 -> Just (e1, e2)) <$ pSpaces <* pToken "?" <*> pExpression <* pToken ":" <*> pExpression <<|> pReturn Nothing)
+pIfThenElse = f <$> pOr <* pSpaces <*> ((\e1 e2 -> Just (e1, e2)) <$ pToken "?" <*> pExpression <* pToken ":" <*> pExpression <<|> pReturn Nothing)
   where
     f l Nothing = l
     f l (Just (e1, e2)) = ExprApp If [PExpr l, PExpr e1, PExpr e2]

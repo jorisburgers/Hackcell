@@ -28,6 +28,9 @@
 	%results you have achieved, including examples of use of your library or application.
 	
 	\section{Reflection}
+	During the project we have implemented almost all features from the project proposal, except for SQL-like query functions. Those can however be implemented on top of the library. The schedule was realistic.
+	
+	Our design has some limitations. When an expression of a field references a non-existing field, there is no way to track this in the dependency graph, as dependants can only be stored for fields that do exist. This would cause that when some field references a non-existing field and then creating that field would not invalidate the first field. The error would still be shown there. This could be fixed relatively easily by either decoupling the dependants from the value of a field, or by creating a separate structure to store the dependants of non-existing fields. Currently we are using a structure that contains the expression and a \texttt{Maybe FieldResult} per field. A \texttt{FieldResult} (with a list of dependants) can thus only be stored when that field has an expression.
 	%Reflection about what went well or better than expected, and what problems you encountered.
 	% - A field that doesn't exist yet, cannot have any dependents.
 	% - Core has not a really functional way of programming
