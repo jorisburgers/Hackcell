@@ -17,15 +17,15 @@
 	
 	\section{Domain and problem}
 	The aim of the project is to provide a library for spreadsheet calculations in Haskell. A spreadsheet is an interactive program where users can perform calculations. It consists of cells, where values or formulas are stored. The cells can be displayed, and will show either the value it contains or the result of the formula it contains. Formulas can reference other cells. Furthermore, a range of cells can be provided as argument of a function, for example to calculate the sum or average of a range of cells. 
-	
+\\\\	
 	A common spreadsheet application is Microsoft Excel, where the cells are stored in a two dimensional sheet and a file can contain multiple sheets.
 	
 	\subsection{Problem description}
-	The problem that Hackcell will solve is the (incremental) calculation of spreadsheets. The library will provide the following functionality:
+	The problem that Hackcell solves is the (incremental) calculation of spreadsheets. The library provides the following functionality:
 	\begin{itemize}
 		\item The ability to allow arbitrary data types in the same spreadsheet, for values, fields and errors. Users can use their own types and are not limited to a number of predefined types.
-		\item Users can specify methods that can be used in the expressions.
-		\item Remove the limitation of the number of dimensions. Most spreadsheet programs give the user a limited amount of dimensions to work with. We want to remove this restriction and let a user define a spreadsheet of arbitrary size and dimensions.
+		\item Users can specify function application that can be used in the expressions.
+		\item The limitation of the number of dimensions is removed. Most spreadsheet programs give the user a limited amount of dimensions to work with. We removed this restriction and let a user define a spreadsheet of arbitrary size and dimensions.
 		\item Detection of cyclic references. In a spreadsheet, cells can reference other cells and this can cause a cycle. This cycle will be detected, preventing an endless loop.
 		\item The possibility to allow users to update specific cells without the need to recompute the entire spreadsheet. The only cells that will be updated are those cells that depend on the changed cell.
 		\item The only values that are computed are the values that need to be computed.
@@ -33,16 +33,68 @@
 	
 	\section{Concepts and techniques}
 	Our project is split in two parts: the core, which implements a generic interface to work with spreadsheets, and a wrapper, which is not generic but practically demonstrates the functionality of the core with an interactive command line interface.
+\begin{listing}
+	\begin{minted}[
+	frame=lines,
+	framesep=2mm,
+	baselinestretch=0.5,
+	fontsize=\footnotesize,
+	linenos
+	]{haskell}
+	newtype Spreadsheet field value err app =
+	Spreadsheet { unSpreadsheet :: M.Map field (Expression field value err app) }
 	
-	In the core we implement the data types, where we do not specify what the types of the field, the values and the errors should be. The implementation should specify this further.
+	class Apply field value err app where
+	apply :: app -> [Argument field value err app] -> Eval field value err app value
 	
-	All the data types that are used in the core can be found in listing \ref{listing:datatypes}. \texttt{Spreadsheet} is used to initialize the \texttt{HackcellState}. The \texttt{HackcellState} saves the expressions and results of all the fields.
+	newtype HackcellState field value err app = HackcellState
+	{ fields :: FieldsMap field value err app }
 	
+	newtype Eval field value err app a = Eval {
+	runEvalState :: ExceptT err (State (EvalState field value err app)) a
+	} deriving (Monad, Functor, Applicative)
+	
+	data EvalState field value err = EvalState
+	{ esHackcellState :: HackcellState field value err app
+	, esField :: field
+	, esStack :: [field]
+	}
+	
+	data Argument field value error app
+	= AValue (Eval field value error app value)
+	| ARange field field
+	
+	
+	data Parameter field value error app
+	= PExpr (Expression field value error app)
+	| PRange field field
+	
+	data FieldResult field value err = FieldResult
+	{ fieldValue :: Either err value
+	, fieldDependants :: [field] }
+	
+	class Hackcellerror err field | err -> field where
+	errorUnknownField :: field -> err
+	errorRecursion :: [field] ->  err
+	errorExpectedValueGotRange :: err
+	errorExpectedRangeGotValue :: err
+	
+	data Expression field value err app
+	= ExprField field
+	| ExprLit value
+	| ExprApp app [Parameter field value err app]
+	\end{minted}
+	\caption{The data types used in the core}
+	\label{listing:datatypes}
+\end{listing}
+\\\\	
+	In the core we implement the data types, where we do not specify what the types of the field, the values and the errors should be. The implementation specifies this further. All the data types that are used in the core can be found in listing \ref{listing:datatypes}. \texttt{Spreadsheet} is used to initialize the \texttt{HackcellState}. The \texttt{HackcellState} saves the expressions and results of all the fields.
+\\\\	
 	\texttt{Eval} is a wrapper with an Except Transformer applied to the State monad. With this we can use a state, that is always passed and the result of the state monad can then either be an error or the normal result. This lets us use all the normal state and error functionality of \texttt{Control.Monad.Except} and \texttt{Control.Monad.State} modules. We put a data type around it, such that users cannot access the state internally. The state that is passed around is the \texttt{EvalState}. This contains the \texttt{HackcellState}, the field that is being calculated (which changes when evaluating a reference to some other field) and the stack of all the fields that are being calculated. The stack is used to detect circular dependencies.
-	
+\\\\	
 	The \texttt{Apply} type class contains the \texttt{apply} function which is used to evaluate function calls. A function call contains a list of parameters that are either an expression or a range. The latter can be used to implement the \texttt{SUM} method from Excel. Since we do not want to pass an expression to the \texttt{app} function, we instead created a new data type, \texttt{Argument}, which is either a value (in the \texttt{Eval} monad) or a range. Given that values are passed in the \texttt{Eval} monad, one can implement lazy operators such an if-then-else construct.
-
-	\texttt{FieldResult} is used to save the results of calculations, either an error or a value. We also store which other fields depend on the result, so that we can recalculate them, if the current field is changed.
+\\\\
+	\texttt{FieldResult} is used to save the results of calculations, either an error or a value. We also store which other fields depend on the result, for dependency tracking.
 	
 	\subsection{Dependency tracking}
 	We store a list of dependant fields in \texttt{FieldResult}. Every time that we evaluate an expression of field $x$ that depends on some field $y$, we add the $x$ to the dependants list of $y$. This gives a dependency graph which we use when a field changes. When the value of field $y$ is modified, the value of $x$ is invalidated, that is, the memoized value is removed. The dependants are recursively invalidated. Their values are not immediately re-evaluated, but are only evaluated when needed.
@@ -50,101 +102,50 @@
 	\subsection{Monadic interface for function definitions}
 	Functions to be used in expression can be defined using the \texttt{Eval} monad. There are a number of functions that can be used by the wrapper to construct functions using \textit{apply}. The \textit{apply} functions gets a name and a list of arguments. The first functions are needed to convert these arguments into either a value or a range of fields. The value can be retrieved using the value \texttt{expectValue}. This functions returns something of the type value. If the argument is an expression, the value of the expression is calculated and returned. If the expression is a field, the value of that field is calculated and returned. If the expression is a literal value, that value is retuned. The programmer also has access to the function \texttt{expectRange}. This functions returns a tuple with the lower bound and the upper bound of the range. The wrapper can decide for itself how to use these bounds. There is also the function \texttt{getValue} that compute the value for a given field and returns it. The function \texttt{tError} throws an error for a specific cell. That error will show in this specific cell and will propagate to cells that depend on this cell. All of these functions can be used to compute results in a simple and clean interface. An example of the function \texttt{If}:
 \begin{minted}{haskell}
-apply  If  p   = do
-		cond <- expectValue (head p)
-           case cond of
-                ValBool c -> if c then
-              		   expectValue (p !! 1)
-           		  else
-               		  expectValue (p !! 2)
-           _ -> tError ErrorInvalidType                  	
+apply If p = do
+     cond <- expectValue (head p)
+     case cond of
+     ValBool c -> if c then
+                    expectValue (p !! 1)
+                  else
+                    expectValue (p !! 2)
+     _ -> tError ErrorInvalidType                  	
 \end{minted}	
-This functions expects three parameters, stored in the variable \texttt{p}. The function requests the value of the first parameter, the condition. If the condition is a boolean, the function checks if that boolean is \texttt{True}. If this is the case, the value of the second parameter returned. If the condition is not \texttt{True}, the value of the third parameter is returned. The advantage is that a branch is only evaluated when the result it is necessary to compute. This way, only the relevant branch is computed and the other branch is ignored. If it turns out that the value of the condition is not a \texttt{ValBool}, an error is thrown that the type is invalid and that error is shown in that specific cells. These functions allow a clean and simple interface for constructing functions on cells. 
-	\begin{listing}
-		\begin{minted}[
-		frame=lines,
-		framesep=2mm,
-		baselinestretch=0.5,
-		fontsize=\footnotesize,
-		linenos
-		]{haskell}
-newtype Spreadsheet field value err app =
-  Spreadsheet { unSpreadsheet :: M.Map field (Expression field value err app) }
+This functions expects three parameters, stored in the variable \texttt{p}. The function requests the value of the first parameter, the condition. If the condition is a boolean, the function checks if that boolean is \texttt{True}. If this is the case, the value of the second parameter returned. If the condition is not \texttt{True}, the value of the third parameter is returned. The advantage is that a branch is only evaluated when the result it is necessary to compute. This way, only the relevant branch is computed and the other branch is ignored. If it turns out that the value of the condition is not a \texttt{ValBool}, an error is thrown that the type is invalid and that error is shown in that specific cells. These functions allow a clean and simple interface for constructing functions on cells.
 
-class Apply field value err app where
-  apply :: app -> [Argument field value err app] -> Eval field value err app value
+	\subsection{Command Line Interface}
+	For the command line interface, monad transformers are also used. The state monad transformer is applied to the \texttt{IO monad}. The state that is kept, contains the \texttt{HackcellState} if it is loaded, but also the currently selected field, the field that is displayed in the top left corner, the file path if it is saved and if either expressions or values should be displayed. It uses the ansi-terminal package for terminal support and the boxes package for pretty printing the spreadsheet.
+	\begin{minted}{haskell}
+data InterActiveState = InterActiveState {
+  hstate :: Maybe (HackcellState Field Value NumberError Fns)
+  , current :: Field
+  , topLeftPrint :: Field
+  , view :: View
+  , file :: Maybe FilePath}
 
-newtype HackcellState field value err app = HackcellState
-  { fields :: FieldsMap field value err app }
-
-newtype Eval field value err app a = Eval {
-  runEvalState :: ExceptT err (State (EvalState field value err app)) a
-  } deriving (Monad, Functor, Applicative)
-
-data EvalState field value err = EvalState
-  { esHackcellState :: HackcellState field value err app
-  , esField :: field
-  , esStack :: [field]
-  }
-
-data Argument field value err
-  = AValue (Eval field value err value)
-  | ARange field field
-
-data Parameter field value err
-  = PExpr (Expression field value err)
-  | PRange field field
-
-data FieldResult field value err = FieldResult
-  { fieldValue :: Either err value
-  , fieldDependants :: [field] }
-
-class Hackcellerror t field | t -> field where
-  errorUnknownField :: field -> t
-  errorRecursion :: [field] -> t
-  errorExpectedValueGotRange :: t
-  errorExpectedRangeGotValue :: t
-
-data Expression field value err app
-  = ExprField field
-  | ExprLit value
-  | ExprApp app [Parameter field value err]
-		\end{minted}
-		\caption{The data types used in the core}
-		\label{listing:datatypes}
-	\end{listing}
+data View = Expr | Result
+	\end{minted}
+	
+	
 	
 	\section{Results}
 	%results you have achieved, including examples of use of your library or application.
 	The result that is obtained is a working library for spreadsheets. The core of the library gives a way to store expressions, evaluate them, track dependencies, detect cyclic references and propagate errors. This library can be used by anyone who wants to create a spreadsheet program.
-
-	A wrapper should be written around the core, which specifies what the types of the fields, the values and the errors are. There are a few restrictions on these types, such that we can provide all the needed functionality. Also a data type that conforms to Apply class should be implemented. In this instance the internal working of functions application should be specified. This leads to these custom classes that should be instanced and on top of that an \texttt{Ord} instance for \texttt{field}.
-\begin{minted}{haskell}
-class Apply field value err app where
-  apply :: app -> [Argument field value err app] -> Eval field value err app value
-  
-class HackcellError err field | err -> field where
-  errorUnknownField :: field -> err
-  errorRecursion :: [field] -> err
-  errorExpectedValueGotRange :: err
-  errorExpectedRangeGotValue :: err
-\end{minted}
-	
-	A few standard utilities are provided, like a pretty printer, throwing custom errors in the monad stack, evaluate all fields and a simple command line interface for debugging. For the pretty printer and command line interface \texttt{Show} instances for \texttt{field}, \texttt{value}, \texttt{err}, \texttt{app} are needed. If functions use range arguments, it should be decided in the wrapper how to handle them. For example make a one dimensional list from a range, a multi dimensional list, etc.
-	
-	On top of this library, we build a wrapper that supports integers, doubles and bools. The field is not yet specified for this, so it can be used in multiple instances. Function applications supports basic operators like \texttt{+}, \texttt{\&\&}, \texttt{<} and if-then-else (\texttt{e1 ? e2 : e3}) constructs. We built a parser using uu-parsinglib to parse expression and to load files. The parser is used to load files and to update the expression of some field. The parser supports error correction.
-	
-	Two different examples for fields are made, a one dimensional one and a two dimensional one:
+\\\\
+	A wrapper should be written around the core, which specifies what the types of the fields, the values and the errors are. There are a few restrictions on these types, such that we can provide all the needed functionality. The error type must be a member of the \texttt{HackcellError} class and the field type should be a member of the \texttt{Ord} class. Also a data type (apply) that is member to the \texttt{Apply} class should be implemented. In this instance the internal working of functions application should be specified. The custom type classes can be found in listing \ref{listing:datatypes}.
+\\\\	
+	A few standard utilities are provided, like a pretty printer, throwing custom errors in the monad stack, evaluate all fields and a simple command line interface for debugging. For the pretty printer and command line interface \texttt{Show} instances for the field, value, error, apply types are needed. If functions use range arguments, it should be decided in the wrapper how to handle them. For example make a one dimensional list from a range, a multi dimensional list, etc.
+\\\\	
+	On top of this library, we build a data type wrapper that supports integers, doubles and bools. This is the \texttt{Data. Hackcell.Wrapper.Numbers} module. The field is not yet specified in this module, so it can be reused. Function applications supports basic operators like \texttt{+}, \texttt{\&\&}, \texttt{<} and if-then-else (\texttt{e1 ? e2 : e3}) constructs. We built a parser using uu-parsinglib to parse expression and to load files. The parser is used to load files and to update the expression of a field. The parser supports error correction.
+\\\\	
+	Two different examples for fields implementation are made, a one dimensional one and a two dimensional one:
 \begin{minted}{haskell}
 -- One dimensional
 data Field = Field Int
 -- Two dimensional
 data Field = Field (Int, Int)
 \end{minted}
-	
-	For the two dimensional one a command line interface and parser is provided. The command line interface is a simplistic version of how this would work for the end user. You can open it by loading the \texttt{InterfaceTable} module (\texttt{cd hackcell/src}, \texttt{ghci Data/Hackcell/Wrapper/InterfaceTable.hs}). Then call the \texttt{interface} function and press the 'h' key to see the help. The user can load and save spreadsheets, create new spreadsheets, insert expressions on a field, view a 10 by 10 overview of the spreadsheet, move through the spreadsheet and switch between seeing expressions and results.
-	
-	When entering an expression with a syntax error, the parser will do error correction and the interface will suggest a similar string that does parse.
+	For the two dimensional example a command line interface and parser is provided. The command line interface is a simplistic version of how this would work for the end user. You can open it by loading the \texttt{InterfaceTable} module (\texttt{cd hackcell/src}, \texttt{ghci Data/Hackcell/Wrapper/InterfaceTable.hs}). Then call the \texttt{interface} function and press the 'h' key to see the functionality. The user will see a 10 by 10 view of the spreadsheet. You can load and save spreadsheets, create new spreadsheets, insert expressions on a field, move through the spreadsheet and switch between seeing expressions and results. When entering an expression with a syntax error, the parser will do error correction and the interface will suggest a similar string that does parse.
 
 	\section{Reflection}
 	During the project we have implemented almost all features from the project proposal, except for SQL-like query functions. Those can however be implemented on top of the library. The schedule was realistic.
