@@ -79,7 +79,7 @@ valueDouble :: Double -> Expression field Value NumberError Fns
 valueDouble = ExprLit . ValDouble
 
 -- | Creates a Double from a Value
-fromValueDouble :: Value -> Eval field Value NumberError Fns Double
+fromValueDouble :: Value -> Eval' field Double
 fromValueDouble (ValDouble x)   = return x
 fromValueDouble _               = tError ErrorInvalidType
 
@@ -88,7 +88,7 @@ valueInt :: Int -> Expression field Value NumberError Fns
 valueInt = ExprLit . ValInt
 
 -- | Creates an Int from a  Value
-fromValueInt :: Value -> Eval field Value NumberError Fns Int
+fromValueInt :: Value -> Eval' field Int
 fromValueInt (ValInt x) = return x
 fromValueInt _          = tError ErrorInvalidType
 
@@ -97,25 +97,25 @@ valueBool :: Bool -> Expression field Value NumberError Fns
 valueBool = ExprLit . ValBool
 
 -- | Creates a Bool from a Value
-fromValueBool :: Value -> Eval field Value NumberError Fns Bool
+fromValueBool :: Value -> Eval' field Bool
 fromValueBool (ValBool x) = return x
 fromValueBool _          = tError ErrorInvalidType
 
-intOpHandler :: (Int -> Int -> Eval field Value NumberError Fns Int) -> [Value] -> Eval field Value NumberError Fns Value
+intOpHandler :: (Int -> Int -> Eval' field Int) -> [Value] -> Eval' field Value
 intOpHandler op [ValInt x, ValInt y] = fmap ValInt (op x y)
 
-doubleOpHandler :: (Double -> Double -> Eval field Value NumberError Fns Double) -> [Value] -> Eval field Value NumberError Fns Value
+doubleOpHandler :: (Double -> Double -> Eval' field Double) -> [Value] -> Eval' field Value
 doubleOpHandler op [ValDouble x, ValDouble y] = fmap ValDouble (op x y)
 
 
-intNameOp :: [(Fns, Int -> Int -> Eval field Value NumberError Fns Int)]
+intNameOp :: [(Fns, Int -> Int -> Eval' field Int)]
 intNameOp  = [
     (Plus, \x y -> return (x + y)),
     (Minus, \x y -> return (x - y)),
     (Times, \x y -> return (x * y)),
     (Divide, intDivision)]
 
-doubleNameOp :: [(Fns, Double -> Double -> Eval field Value NumberError Fns Double)]
+doubleNameOp :: [(Fns, Double -> Double -> Eval' field Double)]
 doubleNameOp  = [
     (Plus, \x y -> return (x + y)),
     (Minus, \x y -> return (x - y)),
@@ -124,11 +124,11 @@ doubleNameOp  = [
 
 
 
-intDivision :: Int -> Int -> Eval field Value NumberError Fns Int
+intDivision :: Int -> Int -> Eval' field Int
 intDivision x y |  y == 0 = tError $ DivideByZeroError "div 0" -- throw error
                 |  otherwise = return $ x `div` y
 
-doubleDivision :: Double -> Double -> Eval field Value NumberError Fns Double
+doubleDivision :: Double -> Double -> Eval' field Double
 doubleDivision x y  |  y == 0 = tError $ DivideByZeroError "div 0"-- throw error
                     |  otherwise = return $ x / y
 
@@ -203,7 +203,7 @@ rangeHandler :: (FieldRange field, Ord field, HackcellError NumberError field)
             -> Value)
             -> field
             -> field
-            -> Eval field Value NumberError Fns Value
+            -> Eval' field Value
 rangeHandler f f1 f2 = do
                         values <- mapM getValue (getRange f1 f2)
                         if not $ isUniformType values then
@@ -215,13 +215,13 @@ rangeHandler f f1 f2 = do
 sumInt :: (FieldRange field, Ord field, HackcellError NumberError field)
         => field
         -> field
-        -> Eval field Value NumberError Fns Value
+        -> Eval' field Value
 sumInt f1 f2 = rangeHandler s f1 f2
                 where
                     s values = ValInt $ foldr (+) 0 $ map fromInt values
                     fromInt (ValInt x) = x
 
-sumDouble :: (FieldRange field, Ord field, HackcellError NumberError field) => field -> field -> Eval field Value NumberError Fns Value
+sumDouble :: (FieldRange field, Ord field, HackcellError NumberError field) => field -> field -> Eval' field Value
 sumDouble f1 f2 = rangeHandler s f1 f2
                 where
                     s values = ValDouble $ foldr (+) 0 $ map fromInt values
@@ -229,7 +229,7 @@ sumDouble f1 f2 = rangeHandler s f1 f2
 
 booleanHandler ::   Fns
                 ->  [Value]
-                ->  Eval field Value NumberError Fns Value
+                ->  Eval' field Value
 booleanHandler And [(ValBool b1), (ValBool b2)]   = return (ValBool $ b1 && b2)
 booleanHandler Or [(ValBool b1), (ValBool b2)]    = return (ValBool $ b1 || b2)
 booleanHandler _ _ = tError ErrorInvalidType
