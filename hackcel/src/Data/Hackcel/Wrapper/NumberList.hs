@@ -33,7 +33,7 @@ instance FieldRange Field where
 
 instance HackcelError NumberError Field where
     errorUnknownField field = UnknownFieldError $ "Unknown field error at index " ++ show field
-    errorRecursion fields   = RecursionError $ "Circular referencing via " ++ concatMap show fields
+    errorRecursion fields   = RecursionError $ "Circular referencing via " ++ concatMap ((++" -> ") . show) fields ++ " ..."
     errorExpectedValueGotRange = ErrorUnexpectedValue
     errorExpectedRangeGotValue = ErrorUnexpectedRange
 

@@ -180,11 +180,23 @@ evalExpression dependants fld = Eval $
     pushStack fld2 = Eval $
       do
         s@EvalState { esStack = stack, esField = fld1 } <- get
-        if fld2 `elem` stack
-          then throwError (errorRecursion stack)
-          else do
+        case findCycle stack fld2 of
+          Just cycle -> throwError $ errorRecursion $ rotateCycle $ reverse cycle
+          Nothing -> do
             put $ s {esStack = fld2 : stack, esField = fld2}
             return fld1
+
+    findCycle :: Ord field => [field] -> field -> Maybe [field]
+    findCycle [] _ = Nothing
+    findCycle (x:xs) f
+      | x == f    = Just [x]
+      | otherwise = fmap (x:) $ findCycle xs f
+
+    rotateCycle :: Ord field => [field] -> [field]
+    rotateCycle [] = []
+    rotateCycle xs = dropWhile (/= m) xs ++ takeWhile (/= m) xs ++ [m]
+      where
+        m = minimum xs
 
     -- Pops a field from the execution stack and restores the current field in the EvalState to the given field.
     popStack :: (HackcelError error field, Ord field)
