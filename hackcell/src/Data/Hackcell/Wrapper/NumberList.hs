@@ -1,7 +1,7 @@
 {-# Language TypeSynonymInstances #-}
 {-# Language MultiParamTypeClasses #-}
 -- | Gives a wrapper implementation for a single dimensional spreadsheet for `Numbers`
-module Data.Hackcel.Wrapper.NumberList
+module Data.Hackcell.Wrapper.NumberList
     (   Field(..)
     ,   field
     ,   fieldExpr
@@ -12,9 +12,9 @@ where
 
 
 
-import Data.Hackcel.Core
-import Data.Hackcel.Wrapper.Numbers
-import Data.Hackcel.Wrapper.DSL
+import Data.Hackcell.Core
+import Data.Hackcell.Wrapper.Numbers
+import Data.Hackcell.Wrapper.DSL
 
 import Data.Either
 import Data.Map.Strict hiding (foldl, map, foldr)
@@ -42,15 +42,15 @@ instance Show Field where
 instance FieldRange Field where
     getRange (Field x) (Field y) = map Field [x..y]
 
-instance HackcelError NumberError Field where
+instance HackcellError NumberError Field where
     errorUnknownField field = UnknownFieldError $ "Unknown field error at index " ++ show field
     errorRecursion fields   = RecursionError $ "Circular referencing via " ++ concatMap ((++" -> ") . show) fields ++ " ..."
     errorExpectedValueGotRange = ErrorUnexpectedValue
     errorExpectedRangeGotValue = ErrorUnexpectedRange
 
 -- | Creates a one dimensional spreadsheet from a list of expressions
-listToSpreadSheet :: [Expression Field Value NumberError Fns] -> HackcelState Field Value NumberError Fns
-listToSpreadSheet xs = createHackcel (Spreadsheet $ fromList fields)
+listToSpreadSheet :: [Expression Field Value NumberError Fns] -> HackcellState Field Value NumberError Fns
+listToSpreadSheet xs = createHackcell (Spreadsheet $ fromList fields)
                     where
                         fields :: [(Field, Expression Field Value NumberError Fns)]
                         fields = map (\(x, i) -> x @@ field i) $

@@ -1,20 +1,20 @@
-module Data.Hackcel.Core.Interactive where
+module Data.Hackcell.Core.Interactive where
 
-import Data.Hackcel.Core.Spreadsheet
-import Data.Hackcel.Core.Eval
-import Data.Hackcel.Core.Expression
-import Data.Hackcel.Core.Utils
+import Data.Hackcell.Core.Spreadsheet
+import Data.Hackcell.Core.Eval
+import Data.Hackcell.Core.Expression
+import Data.Hackcell.Core.Utils
 
-interactive :: (Show field, Show value, Show error, Show app, HackcelError error field
+interactive :: (Show field, Show value, Show error, Show app, HackcellError error field
                , Ord field, Apply field value error app)
-            => HackcelState field value error app
+            => HackcellState field value error app
             -> (String -> Maybe field)
             -> (String -> Maybe (field, Expression field value error app)) -> IO ()
 interactive state pField pExpr = do help
                                     mainProgram state
   where
-    -- mainProgram :: (Show field, Show value, Show error, HackcelError error field
-    --                , Ord field) => HackcelState field value error -> IO ()
+    -- mainProgram :: (Show field, Show value, Show error, HackcellError error field
+    --                , Ord field) => HackcellState field value error -> IO ()
     mainProgram s = do
       arg <- getLine
       case arg of

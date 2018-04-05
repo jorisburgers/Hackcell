@@ -1,7 +1,7 @@
 {-# language FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 -- | Describes a wrapper that describes numbers and booleans and computations on these.
 -- This wrapper is not dependant on a specific field
-module Data.Hackcel.Wrapper.Numbers
+module Data.Hackcell.Wrapper.Numbers
     (    Value(..)
     ,   NumberError(..)
     ,   Fns(..)
@@ -15,8 +15,8 @@ module Data.Hackcel.Wrapper.Numbers
     )
 where
 
-import Data.Hackcel.Core
-import Data.Hackcel.Wrapper.DSL
+import Data.Hackcell.Core
+import Data.Hackcell.Wrapper.DSL
 import Data.Foldable hiding (sum)
 
 import Control.Monad.Except
@@ -136,7 +136,7 @@ compareOperator :: Ord a => (a -> a -> Bool) -> a -> a -> Value
 compareOperator op x y  = (ValBool (x `op` y))
 
 
-instance (HackcelError NumberError field, Ord field, FieldRange field) => Apply field Value NumberError Fns where
+instance (HackcellError NumberError field, Ord field, FieldRange field) => Apply field Value NumberError Fns where
         apply Sum p   =  do
                         (f1, f2) <- expectRange (head p)
                         x <- getValue f1
@@ -198,7 +198,7 @@ instance (HackcelError NumberError field, Ord field, FieldRange field) => Apply 
                                 ValBool _   -> booleanHandler name [x, y]
                             where op lst = fromJust $ lookup name lst
 
-rangeHandler :: (FieldRange field, Ord field, HackcelError NumberError field)
+rangeHandler :: (FieldRange field, Ord field, HackcellError NumberError field)
             => ([Value]
             -> Value)
             -> field
@@ -212,7 +212,7 @@ rangeHandler f f1 f2 = do
                             return $ f values
 
 
-sumInt :: (FieldRange field, Ord field, HackcelError NumberError field)
+sumInt :: (FieldRange field, Ord field, HackcellError NumberError field)
         => field
         -> field
         -> Eval field Value NumberError Fns Value
@@ -221,7 +221,7 @@ sumInt f1 f2 = rangeHandler s f1 f2
                     s values = ValInt $ foldr (+) 0 $ map fromInt values
                     fromInt (ValInt x) = x
 
-sumDouble :: (FieldRange field, Ord field, HackcelError NumberError field) => field -> field -> Eval field Value NumberError Fns Value
+sumDouble :: (FieldRange field, Ord field, HackcellError NumberError field) => field -> field -> Eval field Value NumberError Fns Value
 sumDouble f1 f2 = rangeHandler s f1 f2
                 where
                     s values = ValDouble $ foldr (+) 0 $ map fromInt values
