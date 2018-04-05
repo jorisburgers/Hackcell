@@ -1,8 +1,8 @@
 {-# language FlexibleContexts, FlexibleInstances, MultiParamTypeClasses #-}
 -- | Describes a wrapper that describes numbers and booleans and computations on these.
 -- This wrapper is not dependant on a specific field
-module Data.Hackcel.Wrapper.Numbers(
-        Value(..)
+module Data.Hackcel.Wrapper.Numbers
+    (    Value(..)
     ,   NumberError(..)
     ,   Fns(..)
     ,   valueInt
@@ -12,8 +12,8 @@ module Data.Hackcel.Wrapper.Numbers(
     ,   fromValueDouble
     ,   fromValueBool
     ,   op
-
-) where
+    )
+where
 
 import Data.Hackcel.Core
 import Data.Hackcel.Wrapper.DSL
@@ -24,9 +24,9 @@ import Data.Maybe
 import Prelude hiding (sum, LT, GT, EQ)
 
 -- | Describes a value that can be either an Int, a Double of a Bool.
-data Value  = ValInt Int -- ^Constructor for Int
-            | ValDouble Double -- ^Constructof for Double
-            | ValBool Bool -- ^Constructor for Bool
+data Value  = ValInt Int -- ^ Constructor for Int
+            | ValDouble Double -- ^ Constructof for Double
+            | ValBool Bool -- ^ Constructor for Bool
             deriving (Eq)
 
 instance Show Value where
@@ -35,12 +35,12 @@ instance Show Value where
   show (ValBool x)   = show x
 
 -- | The error that can be thrown for numbers and booleans
-data NumberError    = RecursionError String -- ^Thrown when the computation is recursive
-                    | UnknownFieldError String -- ^Thrown when a unkown field is referenced
-                    | DivideByZeroError String -- ^Thrown when a division by 0 is computed
-                    | ErrorUnexpectedValue -- ^Thrown when a value is expected, but a range is gotten
-                    | ErrorUnexpectedRange -- ^Thrown when a range is expected, but a value is gotten
-                    | ErrorInvalidType -- ^Thrown when there is a type mismatch in `apply`
+data NumberError    = RecursionError String -- ^ Thrown when the computation is recursive
+                    | UnknownFieldError String -- ^ Thrown when a unkown field is referenced
+                    | DivideByZeroError String -- ^ Thrown when a division by 0 is computed
+                    | ErrorUnexpectedValue -- ^ Thrown when a value is expected, but a range is gotten
+                    | ErrorUnexpectedRange -- ^ Thrown when a range is expected, but a value is gotten
+                    | ErrorInvalidType -- ^ Thrown when there is a type mismatch in `apply`
                     deriving (Show, Eq)
 
 instance TypeEq Value where

@@ -1,13 +1,14 @@
 {-# Language TypeSynonymInstances #-}
 {-# Language MultiParamTypeClasses #-}
 -- | Gives a wrapper implementation for a single dimensional spreadsheet for `Numbers`
-module Data.Hackcel.Wrapper.NumberList(
-        Field(..)
+module Data.Hackcel.Wrapper.NumberList
+    (   Field(..)
     ,   field
     ,   fieldExpr
     ,   fieldParam
     ,   listToSpreadSheet
-) where
+    ) 
+where
 
 
 

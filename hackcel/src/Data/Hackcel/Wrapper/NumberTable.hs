@@ -1,14 +1,15 @@
 {-# Language TypeSynonymInstances #-}
 {-# Language MultiParamTypeClasses #-}
 -- | Describes a 2-dimensional table for `Numbers`
-module Data.Hackcel.Wrapper.NumberTable(
-        Field(..)
+module Data.Hackcel.Wrapper.NumberTable
+    (    Field(..)
     ,   field
     ,   fieldExpr
     ,   fieldParam
     ,   listToSpreadSheet
     ,   Expression'
-)where
+    )
+where
 
 import Data.Hackcel.Core
 import Data.Hackcel.Wrapper.DSL
