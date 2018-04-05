@@ -29,11 +29,9 @@
 	
 	\texttt{Eval} is a wrapper with an Except Transformer applied to the State monad. With this we can use a state, that is always passed and the result of the state monad can then either be an error or the normal result. This lets us use all the normal state and error functionality of \texttt{Control.Monad.Except} and \texttt{Control.Monad.State} modules. We put a data type around it, such that users cannot access the state internally. The state that is passed around is the \texttt{EvalState}. This contains the \texttt{HackcellState}, the field that is being calculated (which changes when evaluating a reference to some other field) and the stack of all the fields that are being calculated. The stack is used to detect circular dependencies.
 	
-	The \texttt{Apply} type class contains the \texttt{apply} function which is used to evaluate function calls. A parameter of a function call can either be an expression or a range. The latter can be used to implement the \texttt{SUM} method from Excel. Since we do not want to pass an expression to the \texttt{app} function, we instead created a new data type, \texttt{Argument}, which is either a value (in the \texttt{Eval} monad) or a range. Given that values are passed in the \texttt{Eval} monad, one can implement lazy operators such an if-then-else construct.
+	The \texttt{Apply} type class contains the \texttt{apply} function which is used to evaluate function calls. A function call contains a list of parameters that are either an expression or a range. The latter can be used to implement the \texttt{SUM} method from Excel. Since we do not want to pass an expression to the \texttt{app} function, we instead created a new data type, \texttt{Argument}, which is either a value (in the \texttt{Eval} monad) or a range. Given that values are passed in the \texttt{Eval} monad, one can implement lazy operators such an if-then-else construct.
 
 	\texttt{FieldResult} is used to save the results of calculations, either an error or a value. We also store which other fields depend on the result, so that we can recalculate them, if the current field is changed.
-	
-	We make a class of standard errors, which the wrapper should implement (with own error messages). And for expressions, we either have a value, a range or an application of a function.
 	
 	\subsection{Dependency tracking}
 	We store a list of dependant fields in \texttt{FieldResult}. Every time that we evaluate an expression of field $x$ that depends on some field $y$, we add the $x$ to the dependants list of $y$. This gives a dependency graph which we use when a field changes. When the value of field $y$ is modified, the value of $x$ is invalidated, that is, the memoized value is removed. The dependants are recursively invalidated. Their values are not immediately re-evaluated, but are only evaluated when needed.
@@ -41,7 +39,7 @@
 	\subsection{Monadic interface for function definitions}
 	Functions to be used in expression can be defined using the \texttt{Eval} monad.
 	
-	TODO
+	% TODO
 	
 	\begin{listing}
 		\begin{minted}[
