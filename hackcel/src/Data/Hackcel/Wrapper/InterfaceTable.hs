@@ -33,7 +33,8 @@ data InterActiveState = InterActiveState {
 
 data View = Expr | Result
 
-interactiveTable = interactive(listToSpreadSheet expressions) parseField parseFE
+interactiveTable :: HackcelState Field Value NumberError Fns -> IO ()
+interactiveTable st = interactive st parseField parseFE
 
 printNumberTable :: InterActiveState -> String
 printNumberTable ias = maybe "" (render.printer) curstate

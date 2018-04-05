@@ -159,6 +159,6 @@ parseFE str | null errors = Just fe
 
 parseField :: String -> Maybe Field
 parseField str | null errors = Just fe
-            | otherwise = Nothing
+               | otherwise = Nothing
   where
     (fe, errors) = parse ((,) <$> pField <*> pEnd) $ createStr (LineCol 0 0) str
