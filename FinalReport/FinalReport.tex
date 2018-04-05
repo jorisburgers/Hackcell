@@ -28,6 +28,15 @@
 	%results you have achieved, including examples of use of your library or application.
 	
 	\section{Reflection}
+	During the project we have implemented almost all features from the project proposal, except for SQL-like query functions. Those can however be implemented on top of the library. The schedule was realistic.
+	
+	Our design has some limitations. When an expression of a field references a non-existing field, there is no way to track this in the dependency graph, as dependants can only be stored for fields that do exist. This would cause that when some field references a non-existing field and then creating that field would not invalidate the first field. The error would still be shown there. This could be fixed relatively easily by either decoupling the dependants from the value of a field, or by creating a separate structure to store the dependants of non-existing fields. Currently we are using a structure that contains the expression and a \texttt{Maybe FieldResult} per field. A \texttt{FieldResult} (with a list of dependants) can thus only be stored when that field has an expression.
+	
+	Expressions in our language are untyped. In the wrapper, we throw an error when evaluating expressions that are not well typed. Instead, one could also choose to do implicit coercions. It is not possible to add a static type system, without modifying the core. It was a design decision to not add a static type system.
+	
+	The code in the core has a lot of \texttt{field value error app} occurrences, to instantiate the type arguments of our data types. This clutters the code. Alternatives would be to use a single type with a type class that has associated types. Those associated types would replace the current type arguments. Furthermore, we require that three type classes hold on the type arguments, namely \texttt{Ord field}, \texttt{HackcelError error field} and \texttt{Apply field value error app}. We could replace those three by a single type class, but that would make the library less flexible. When one would first want to fix the \texttt{field} and \texttt{error} types, the \texttt{HackcelError} type class could already be implemented. Replacing those type classes by a single type class would not allow this.
+	
+	
 	%Reflection about what went well or better than expected, and what problems you encountered.
 	% - A field that doesn't exist yet, cannot have any dependents.
 	% - Core has not a really functional way of programming

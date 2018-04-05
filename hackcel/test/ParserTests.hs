@@ -39,6 +39,8 @@ valid = testGroup "Parse valid expressions" $ fmap shouldParse
   , "true"
   , "true == true && false == false ? true : false"
   , "true != false"
+  , "1 + 2 * 3"
+  , "1 * 2 + 3"
   ]
 
 invalid :: TestTree
