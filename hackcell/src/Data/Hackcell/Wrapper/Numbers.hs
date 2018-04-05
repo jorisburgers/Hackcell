@@ -232,4 +232,4 @@ booleanHandler ::   Fns
                 ->  Eval field Value NumberError Fns Value
 booleanHandler And [(ValBool b1), (ValBool b2)]   = return (ValBool $ b1 && b2)
 booleanHandler Or [(ValBool b1), (ValBool b2)]    = return (ValBool $ b1 || b2)
-booleanHandler _ _ = error "Not the right syntax for booleans"
+booleanHandler _ _ = tError ErrorInvalidType
