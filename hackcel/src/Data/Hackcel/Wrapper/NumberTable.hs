@@ -23,7 +23,7 @@ import Data.Char
 import Prelude hiding (LT, GT, EQ)
 
 -- | Describes a 2-dimensional table
-data Field = Field (Int, Int) -- ^Constructs a field based on a x and a y coordinate
+data Field = Field (Int, Int) -- ^ Constructs a field based on a x and a y coordinate
             deriving (Eq, Ord)
 
 -- | Describes an Expression for a 2-dimensional field with `Numbers`

@@ -1,9 +1,9 @@
 {-# language FlexibleContexts, RankNTypes, TupleSections #-}
 -- | Parses Expressions and Files for `NumberTable`
 module Data.Hackcel.Wrapper.Parser
-    (    parseFile
+    (   parseFile
     ,   parseExpression
-    )   
+    )
 where
 
 import Prelude hiding (LT, GT, EQ)
