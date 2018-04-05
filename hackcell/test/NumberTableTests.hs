@@ -6,7 +6,7 @@ import Test.Tasty.QuickCheck
 import Data.Hackcell.Core
 import Data.Hackcell.Wrapper.DSL
 import Data.Hackcell.Wrapper.NumberTable
-import Data.Hackcell.Wrapper.Numbers
+import Data.Hackcell.Wrapper.Numbers hiding (fromValueInt, fromValueBool, fromValueDouble)
 
 import Data.Map.Strict hiding (foldl, map)
 
@@ -15,6 +15,15 @@ numberTableProperties = testGroup "Number Table Properties" [
         singleIntValueProperty,
         singleDoubleValueProperty
     ]
+
+fromValueInt :: Value -> Int
+fromValueInt (ValInt x) = x
+fromValueInt _          = error "Value is not an Int"
+
+-- | Creates a Double from a Value
+fromValueDouble :: Value -> Double
+fromValueDouble (ValDouble x)   = x
+fromValueDouble _               = error "Value is not a Double"
 
 fromRight' :: Either a b -> b
 fromRight' (Right x) = x
