@@ -16,9 +16,20 @@
 	\maketitle
 	
 	\section{Domain and problem}
-	%vA description of your domain and problem and how they translate to code.
-	% See the proposal, and update what is still relevant
-	% WHy abstraction in the core
+	The aim of the project is to provide a library for spreadsheet calculations in Haskell. A spreadsheet is an interactive program where users can perform calculations. It consists of cells, where values or formulas are stored. The cells can be displayed, and will show either the value it contains or the result of the formula it contains. Formulas can reference other cells. Also a range of cells can be provided as argument of a function, for example to calculate the sum or average of a range of cells. 
+	
+	A common spreadsheet application is Microsoft Excel, where the cells are stored in a two dimensional sheet and a file can contain multiple sheets. Cells can refer to other cells in the same or other sheets.
+	
+	\subsection{Problem description}
+	The problem that Hackcell will solve is the (incremental) calculation of spreadsheets. The library will provide the following functionality:
+	\begin{itemize}
+		\item The ability to allow arbitrary data types in the same spreadsheet, for values, fields and errors. Users can use their own types and are not limited to a number of predefined types.
+		\item Users can specify methods that can be used in the expressions.
+		\item Remove the limitation of the number of dimensions. Most spreadsheet programs give the user a limited amount of dimensions to work with. We want to remove this restriction and let a user define a spreadsheet of arbitrary size and dimensions.
+		\item Detection of cyclic references. In a spreadsheet, cells can reference other cells and this can cause a cycle. This cycle will be detected, preventing an endless loop.
+		\item The possibility to allow users to update specific cells without the need to recompute the entire spreadsheet. The only cells that will be updated are those cells that depend on the changed cell.
+		\item The only values that are computed are the values that need to be computed.
+	\end{itemize}	
 	
 	\section{Concepts and techniques}
 	%The most important concept and techniques used throughout the code.
