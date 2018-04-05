@@ -1,5 +1,5 @@
 {-# language MultiParamTypeClasses, FlexibleContexts, GeneralizedNewtypeDeriving, FunctionalDependencies #-}
-
+-- | Provides the core functionality for the spreadsheet program
 module Data.Hackcell.Core
   ( module Data.Hackcell.Core.Eval
   , module Data.Hackcell.Core.Expression

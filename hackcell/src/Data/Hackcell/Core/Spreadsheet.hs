@@ -1,6 +1,6 @@
 {-# language MultiParamTypeClasses, FlexibleContexts, GeneralizedNewtypeDeriving
     , FunctionalDependencies, TupleSections #-}
-
+-- | Provides the functionality to store spreadsheets and computed results
 module Data.Hackcell.Core.Spreadsheet(Spreadsheet(..), FieldResult(..)) where
 
 import Control.Monad

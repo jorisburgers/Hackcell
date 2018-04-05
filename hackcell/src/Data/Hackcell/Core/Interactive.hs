@@ -1,10 +1,11 @@
+-- | Provides the functionality for an interaction with the spreadsheet via the console
 module Data.Hackcell.Core.Interactive where
 
 import Data.Hackcell.Core.Spreadsheet
 import Data.Hackcell.Core.Eval
 import Data.Hackcell.Core.Expression
 import Data.Hackcell.Core.Utils
-
+-- | Runs the basic interactive mode
 interactive :: (Show field, Show value, Show error, Show app, HackcellError error field
                , Ord field, Apply field value error app)
             => HackcellState field value error app

@@ -1,5 +1,5 @@
 {-# language MultiParamTypeClasses, FlexibleContexts, GeneralizedNewtypeDeriving, FunctionalDependencies #-}
-
+-- | Provides the functionality for creating Expressions, Parameters and Errors
 module Data.Hackcell.Core.Expression (Parameter(..), HackcellError(..), Expression(..)) where
 
 import Data.List (intercalate)
@@ -31,10 +31,11 @@ class HackcellError t field | t -> field where
   --   but got a value instead.
   errorExpectedRangeGotValue :: t
 
+-- | Represents an expression that is in a cell
 data Expression field value error app
-  = ExprField field
-  | ExprLit value
-  | ExprApp app [Parameter field value error app]
+  = ExprField field  -- ^ References another field
+  | ExprLit value   -- ^ Represents a constant value
+  | ExprApp app [Parameter field value error app] -- ^ Represents an operatorion with parameters
 
 instance (Show field, Show value, Show error, Show app) => Show (Expression field value error app) where
   show (ExprField field) = show field
