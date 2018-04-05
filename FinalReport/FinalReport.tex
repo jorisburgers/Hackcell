@@ -123,7 +123,7 @@ class HackcellError err field | err -> field where
 	
 	A few standard utilities are provided, like a pretty printer, throwing custom errors in the monad stack, evaluate all fields and a simple command line interface for debugging. For the pretty printer and command line interface \texttt{Show} instances for \texttt{field}, \texttt{value}, \texttt{err}, \texttt{app} are needed. If functions use range arguments, it should be decided in the wrapper how to handle them. For example make a one dimensional list from a range, a multi dimensional list, etc.
 	
-	On top of this library, we build a wrapper that supports integers, doubles and bools. The field is not yet specified for this, so it can be used in multiple instances. Function applications supports basic operators like \texttt{+}, \texttt{\&\&}, \texttt{<} and if-then-else (\texttt{e1 ? e2 : e3}) constructs.
+	On top of this library, we build a wrapper that supports integers, doubles and bools. The field is not yet specified for this, so it can be used in multiple instances. Function applications supports basic operators like \texttt{+}, \texttt{\&\&}, \texttt{<} and if-then-else (\texttt{e1 ? e2 : e3}) constructs. We built a parser using uu-parsinglib to parse expression and to load files. The parser is used to load files and to update the expression of some field. The parser supports error correction.
 	
 	Two different examples for fields are made, a one dimensional one and a two dimensional one:
 \begin{minted}{haskell}
@@ -133,7 +133,10 @@ data Field = Field Int
 data Field = Field (Int, Int)
 \end{minted}
 	
-	For the two dimensional one a command line interface and parser is provided. The command line interface is a simplistic version of how this would work for the end user. You can open it by loading the \texttt{InterfaceTable} module. Then use the \texttt{interface} function and press the 'h' key to see the help. The user can load and save spreadsheets, create new spreadsheets, insert expressions on a field, view a 10 by 10 overview of the spreadsheet, move through the spreadsheet and switch between seeing expressions and results. 
+	For the two dimensional one a command line interface and parser is provided. The command line interface is a simplistic version of how this would work for the end user. You can open it by loading the \texttt{InterfaceTable} module (\texttt{cd hackcell/src}, \texttt{ghci Data/Hackcell/Wrapper/InterfaceTable.hs}). Then call the \texttt{interface} function and press the 'h' key to see the help. The user can load and save spreadsheets, create new spreadsheets, insert expressions on a field, view a 10 by 10 overview of the spreadsheet, move through the spreadsheet and switch between seeing expressions and results.
+	
+	When entering an expression with a syntax error, the parser will do error correction and the interface will suggest a similar string that does parse.
+
 	\section{Reflection}
 	During the project we have implemented almost all features from the project proposal, except for SQL-like query functions. Those can however be implemented on top of the library. The schedule was realistic.
 \\\\	
