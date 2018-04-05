@@ -1,6 +1,10 @@
 {-# language FlexibleContexts, RankNTypes, TupleSections #-}
-
-module Data.Hackcel.Wrapper.Parser where
+-- | Parses Expressions and Files for `NumberTable`
+module Data.Hackcel.Wrapper.Parser
+    (   parseFile
+    ,   parseExpression
+    )
+where
 
 import Prelude hiding (LT, GT, EQ)
 
@@ -54,7 +58,7 @@ pFieldColumnChar = (\c -> fromJust $ elemIndex c ['A' .. ]) <$> pRange ('A', 'Z'
 pField :: Parser Field
 pField = f <$> pSome pFieldColumnChar <*> pInt
   where
-    f column row = FieldInt (foldl (\x y -> 1 + x * 26 + y) 0 column, row)
+    f column row = Field (foldl (\x y -> 1 + x * 26 + y) 0 column, row)
 
 -- Parses an expression of a left associative infix binary operator
 pOperatorLeft :: Parser Fns -> Parser Expression' -> Parser Expression'
@@ -132,6 +136,8 @@ pIfThenElse = f <$> pOr <* pSpaces <*> ((\e1 e2 -> Just (e1, e2)) <$ pToken "?" 
 pExpression :: Parser Expression'
 pExpression = pSpaces *> pIfThenElse <* pSpaces
 
+-- | Parses a single expression. and returns an expression and a Bool, which is True if the parsing was sucessfull,
+-- False if the error was automatically corrected
 parseExpression :: String -> (Expression', Bool)
 parseExpression str = (expr, null errors)
   where
@@ -143,6 +149,8 @@ pLine = (,) <$> pField <* pToken ": =" <*> pExpression <* pToken ":" <* pMunch (
 pFile :: Parser [(Field, Expression')]
 pFile = pListSep (pToken "\n") pLine
 
+-- | Parses a single file to a list of (Field, Expression') and a Bool, which is True if the parsing was succesfull and False
+-- if error correction was applied
 parseFile :: String -> ([(Field, Expression')], Bool)
 parseFile str = (file, null errors)
   where

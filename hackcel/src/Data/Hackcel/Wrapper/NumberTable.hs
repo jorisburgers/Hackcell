@@ -1,6 +1,15 @@
 {-# Language TypeSynonymInstances #-}
 {-# Language MultiParamTypeClasses #-}
-module Data.Hackcel.Wrapper.NumberTable where
+-- | Describes a 2-dimensional table for `Numbers`
+module Data.Hackcel.Wrapper.NumberTable
+    (    Field(..)
+    ,   field
+    ,   fieldExpr
+    ,   fieldParam
+    ,   listToSpreadSheet
+    ,   Expression'
+    )
+where
 
 import Data.Hackcel.Core
 import Data.Hackcel.Wrapper.DSL
@@ -13,22 +22,27 @@ import Data.Char
 
 import Prelude hiding (LT, GT, EQ)
 
-data Field = FieldInt (Int, Int)
+-- | Describes a 2-dimensional table
+data Field = Field (Int, Int) -- ^ Constructs a field based on a x and a y coordinate
             deriving (Eq, Ord)
 
+-- | Describes an Expression for a 2-dimensional field with `Numbers`
 type Expression' = Expression Field Value NumberError Fns
 
+-- | Creates a Field from a tuple of coordinates
 field :: (Int, Int) -> Field
-field = FieldInt
+field = Field
 
+-- | Creates a Expression from a tuple of coordinates
 fieldExpr :: (Int, Int) -> Expression'
 fieldExpr = ExprField . field
 
+-- | Creates a Parameter from a tuple of coordinates
 fieldParam :: (Int, Int) -> Parameter Field Value NumberError Fns
 fieldParam = PExpr . fieldExpr
 
 instance Show Field where
-    show (FieldInt (a,b)) = columntoNumber a ++ show b
+    show (Field (a,b)) = columntoNumber a ++ show b
 
 columntoNumber :: Int -> String
 columntoNumber x | x < 0 = '-' : helper (-x)
@@ -49,9 +63,9 @@ instance HackcelError NumberError Field where
     errorExpectedRangeGotValue = ErrorUnexpectedRange
 
 instance FieldRange Field where
-    getRange (FieldInt (x1, y1)) (FieldInt (x2, y2)) = [FieldInt (x, y)  | x <- [(min x1 x2)..(max x1 x2)]
+    getRange (Field (x1, y1)) (Field (x2, y2)) = [Field (x, y)  | x <- [(min x1 x2)..(max x1 x2)]
                                                                 , y <- [(min y1 y2) .. (max y1 y2)]]
-
+-- | Converts a two dimenonal list to a Spreadsheet.
 listToSpreadSheet :: [[Expression']] -> HackcelState Field Value NumberError Fns
 listToSpreadSheet xss   | not (sameLengths xss) = error "multidimensionale array not all the same size"
                         | otherwise             = createHackcel (Spreadsheet $ M.fromList $ concat $ fields xss 1 1)

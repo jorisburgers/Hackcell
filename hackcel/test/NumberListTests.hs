@@ -10,9 +10,9 @@ import Data.Hackcel.Wrapper.DSL
 import Data.Hackcel.Wrapper.NumberList
 import Data.Hackcel.Wrapper.Numbers
 
-import Data.Either
 import Data.Map.Strict
 
+numberListProperties :: TestTree
 numberListProperties = testGroup "Number List Properties" [
         singleIntValueProperty,
         singleDoubleValueProperty,
@@ -53,9 +53,11 @@ singleValueProperty unF f x y = (unF valueF) == x
                                 spreadSheet = createSpreadSheet [f x @@ field y]
 
 -- Test the insertion of an Int
+singleIntValueProperty :: TestTree
 singleIntValueProperty = testProperty "Single int insertion and retrieval" $ singleValueProperty fromValueInt valueInt
 
 -- Test the insertion of a Double
+singleDoubleValueProperty :: TestTree
 singleDoubleValueProperty = testProperty "Single double insertion and retrieval" $ singleValueProperty fromValueDouble valueDouble
 
 -- Verifies that an operation gives the correct result
@@ -70,19 +72,27 @@ operationProperty operation opName unF f x y z = (unF valueF) == operation x y
                                 spreadSheet = createSpreadSheet [op opName [PExpr $ f x, PExpr $ f y] @@ field z]
 
 -- Tests the different operators
+plusIntProperty :: TestTree
 plusIntProperty = testProperty "Plus Int" (operationProperty (+) Plus fromValueInt valueInt)
+minusIntProperty :: TestTree
 minusIntProperty = testProperty "Minus Int" (operationProperty (-) Minus fromValueInt valueInt)
+timesIntProperty :: TestTree
 timesIntProperty = testProperty "Times Int" (operationProperty (*) Times fromValueInt valueInt)
+andBoolProperty :: TestTree
 andBoolProperty = testProperty "And Bool" (operationProperty (&&) And fromValueBool valueBool)
+orBoolProperty :: TestTree
 orBoolProperty = testProperty "Or Bool" (operationProperty (||) Or fromValueBool valueBool)
+ltIntProperty :: TestTree
 ltIntProperty = testProperty "LT Int" (operationProperty (<) LT fromValueBool valueInt)
+leIntProperty :: TestTree
 leIntProperty = testProperty "LE Int" (operationProperty (<=) LE fromValueBool valueInt)
+gtIntProperty :: TestTree
 gtIntProperty = testProperty "GT Int" (operationProperty (>) GT fromValueBool valueInt)
+geIntProperty :: TestTree
 geIntProperty = testProperty "GE Int" (operationProperty (>=) GE fromValueBool valueInt)
+divideIntNormalProperty :: TestTree
 divideIntNormalProperty = testProperty "Divide Int by /= 0" ((\x y -> y /= 0 ==> operationProperty div Divide fromValueInt valueInt x y))
-
-
-
+divideIntErrorProperty :: TestTree
 divideIntErrorProperty = testProperty "Divide Int by 0" ((\x y -> errorProperty Divide (DivideByZeroError "div 0") valueInt x 0 y))
 
 -- | Test whether an error is returned by a property

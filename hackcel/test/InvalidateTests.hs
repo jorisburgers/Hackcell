@@ -8,7 +8,6 @@ import Data.Hackcel.Wrapper.DSL
 import Data.Hackcel.Wrapper.NumberList
 import Data.Hackcel.Wrapper.Numbers
 
-import Data.Either
 import Data.Map.Strict
 
 spreadsheet :: HackcelState Field Value NumberError Fns
@@ -16,7 +15,7 @@ spreadsheet = evalAll $ createHackcel $ Spreadsheet $ fromList
     -- Literals
   [ ExprLit (ValInt 0) @@ field 1
   , ExprLit (ValInt 2) @@ field 2
-  
+
     -- Formulas
   , ExprApp Plus [PExpr $ ExprField $ field 1, PExpr $ ExprLit $ ValInt 1] @@ field 11
   , ExprApp Plus [PExpr $ ExprField $ field 2, PExpr $ ExprLit $ ValInt 2] @@ field 12
@@ -52,7 +51,7 @@ invalidateTests :: TestTree
 invalidateTests = testGroup "Invalidate"
   [ testGroup "should invalidate" $ fmap (uncurry $ shouldInvalidate spreadsheet)
     -- Direct dependencies
-    [ (field 1, field 11) 
+    [ (field 1, field 11)
     , (field 2, field 12)
     , (field 11, field 21)
     , (field 12, field 21)
