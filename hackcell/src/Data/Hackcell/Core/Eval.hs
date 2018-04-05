@@ -1,7 +1,7 @@
 {-# language MultiParamTypeClasses, FlexibleContexts, GeneralizedNewtypeDeriving #-}
-
+-- | Provides the functionality for evaluating expressions, computing the results and updating values
 module Data.Hackcell.Core.Eval (Eval(..), Apply, apply, HackcellState(..), EvalState(..), runField
-                              , Argument(..), getValue, runEval
+                              , Argument(..), getValue, runEval, FieldsMap
                               , set) where
 
 import Control.Monad
@@ -17,8 +17,10 @@ import Data.List (intercalate)
 
 -- | Handles function applications in expressions of the spreadsheet.
 class Apply field value error app where
-  apply :: app -> [Argument field value error app] -> Eval field value error app value
+    -- | Handles the application of functions with arguments
+    apply :: app -> [Argument field value error app] -> Eval field value error app value
 
+-- | The map that contains all the fields with their values
 type FieldsMap field value error app = M.Map field (Expression field value error app, Maybe (FieldResult field value error))
 
 -- | The state of a Hackcel spreadsheet.

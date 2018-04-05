@@ -1,4 +1,5 @@
 {-# language TupleSections #-}
+-- | Provides a few utility functions for spreadsheets
 module Data.Hackcell.Core.Utils where
 
 import Data.Hackcell.Core.Spreadsheet
@@ -31,6 +32,7 @@ expectRange :: HackcellError error field => Argument field value error app -> Ev
 expectRange (AValue _)   = tError errorExpectedRangeGotValue
 expectRange (ARange a b) = return (a, b)
 
+-- | Pretty prints all the fields as a list
 prettyprint :: (Show field, Show value, Show error, Show app) => HackcellState field value error app -> String
 prettyprint hackcel = foldr printField "" $ M.toAscList allFields
   where
@@ -42,14 +44,17 @@ prettyprint hackcel = foldr printField "" $ M.toAscList allFields
       Left e -> show e
       Right v -> show v
 
+-- | Prints the pretty printed result to the console
 prettyprinter :: (Show field, Show value, Show error, Show app) => HackcellState field value error app -> IO ()
 prettyprinter = putStrLn . prettyprint
 
+-- | Evaluates all the expressions in the spreadsheet
 evalAll :: (HackcellError error field, Ord field, Apply field value error app)
         => HackcellState field value error app
         -> HackcellState field value error app
 evalAll s = evalFields s (M.keys $ fields s)
 
+-- | Evaluate all the given fields
 evalFields :: (HackcellError error field, Ord field, Apply field value error app)
            => HackcellState field value error app
            -> [field]
@@ -59,6 +64,7 @@ evalFields s (f:fs) = evalFields s' fs
   where
     (_, s') = runField f s
 
+-- | Checks if a field is already evaluated
 isEvaluated :: (Ord field) => HackcellState field value error app -> field -> Bool
 isEvaluated (HackcellState m) f = case M.lookup f m of
   (Just (_, Just _)) -> True
