@@ -3,6 +3,8 @@
 module Data.Hackcell.Wrapper.Parser
     (   parseFile
     ,   parseExpression
+    ,   parseFE
+    ,   parseField
     )
 where
 
@@ -157,14 +159,16 @@ parseFile str = (file, null errors)
     (file, errors) = parse ((,) <$> pFile <*> pEnd) $ createStr (LineCol 0 0) str
 
 pFE :: Parser (Field, Expression')
-pFE = flip (,) <$> pExpression <* pToken "@" <*> pField
+pFE = flip (,) <$> pExpression <* pSpaces <* pToken "@@" <* pSpaces <*> pField
 
+-- | Parser an expression @@  field
 parseFE :: String -> Maybe (Field, Expression')
 parseFE str | null errors = Just fe
             | otherwise = Nothing
   where
     (fe, errors) = parse ((,) <$> pFE <*> pEnd) $ createStr (LineCol 0 0) str
 
+-- | Parser a field
 parseField :: String -> Maybe Field
 parseField str | null errors = Just fe
                | otherwise = Nothing

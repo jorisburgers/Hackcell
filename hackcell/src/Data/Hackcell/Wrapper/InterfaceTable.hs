@@ -1,5 +1,5 @@
 {-# language  ScopedTypeVariables #-}
-module InterfaceTable where
+module InterfaceTable (interactiveTable, interface) where
 
 import Data.Hackcell.Core
 import Data.Hackcell.Wrapper.DSL
@@ -21,9 +21,6 @@ import Text.ParserCombinators.UU.Core
 import Text.ParserCombinators.UU.BasicInstances
 import Text.ParserCombinators.UU.Derived
 
-testSpreadsheet :: HackcellState Field Value NumberError Fns
-testSpreadsheet = listToSpreadSheet expressions
-
 data InterActiveState = InterActiveState {
                           hstate :: Maybe (HackcellState Field Value NumberError Fns)
                         , current :: Field
@@ -33,6 +30,7 @@ data InterActiveState = InterActiveState {
 
 data View = Expr | Result
 
+-- | An interactive debug mode for the NumberTable wrapper
 interactiveTable :: HackcellState Field Value NumberError Fns -> IO ()
 interactiveTable st = interactive st parseField parseFE
 
@@ -43,7 +41,7 @@ printNumberTable ias = maybe "" (render.printer) curstate
     curField = current ias
     topLeftField = topLeftPrint ias
     curview = view ias
-    FieldInt (l,t) = topLeftField
+    Field (l,t) = topLeftField
 
     printer :: HackcellState Field Value NumberError Fns -> Box
     printer state = (rowname <> (columnname // vcat left (
@@ -59,7 +57,7 @@ printNumberTable ias = maybe "" (render.printer) curstate
                        _    -> " = "
 
     helper :: HackcellState Field Value NumberError Fns -> Int -> Int -> Box
-    helper state i j = let f = FieldInt (i + l,j + t) in
+    helper state i j = let f = Field (i + l,j + t) in
       case M.lookup f (fields state) of
         Just (e, Just v) -> case curview of
                               Expr -> boxprinter f (Just e)
@@ -71,14 +69,10 @@ printNumberTable ias = maybe "" (render.printer) curstate
     rowname = char ' ' // foldl (\b i -> b // text (replicate 8 '-') // (text.printname) (i + t))
       nullBox [0..9]
 
-    printname n = let x = show n in take 8 $ replicate (8 - length x) ' ' ++ x
-
-    printname' n = let x = n in take 8 $ replicate (8 - length x) ' ' ++ x
-
     boxprinter :: Show a => Field -> Maybe a -> Box
-    boxprinter f@(FieldInt (a,b)) e = borderh // (char hline <> text content)
+    boxprinter f@(Field (a,b)) e = borderh // (char hline <> text content)
         where
-          FieldInt (c,d) = curField
+          Field (c,d) = curField
 
           content = maybe emptys printname e
           emptys = replicate 8 ' '
@@ -86,12 +80,21 @@ printNumberTable ias = maybe "" (render.printer) curstate
           vline = if f == curField || a == c && b == d + 1 then  '*' else '-'
           borderh = text $ '+' : replicate 8 vline
 
+printname :: (Show a) => a -> String
+printname n = let x = show n in take 8 $ replicate (8 - length x) ' ' ++ x
+
+printname' :: String -> String
+printname' n = let x = n in take 8 $ replicate (8 - length x) ' ' ++ x
+
+
+-- | A command line interface for the NumberTable. Press the 'h' key (help) for
+-- the options it supports.
 interface :: IO ()
 interface = do setTitle "HackCell: the Spreadsheet program in Haskell"
                clearScreen
                void $ runStateT (do help; startProgram) startState
   where
-    startState = InterActiveState Nothing (FieldInt (1,1)) (FieldInt (1,1)) Result Nothing
+    startState = InterActiveState Nothing (Field (1,1)) (Field (1,1)) Result Nothing
     startProgram :: StateT InterActiveState IO ()
     startProgram = do
       arg <- liftIO getLine
@@ -102,9 +105,9 @@ interface = do setTitle "HackCell: the Spreadsheet program in Haskell"
        'l':fn -> case fn of
                    "" -> do refresh; putStrLnS "The load argument needs a [file]\
                             \ argument"; startProgram
-                   ' ':xs -> loadfile xs
+                   ' ':xs -> do loadfile xs; mainProgram False
                    xs  -> do unknownArg ('l':xs); startProgram
-       'n':_  -> newFile
+       'n':_  -> do newFile; mainProgram False
        xs     -> do unknownArg xs; startProgram
 
     mainProgram :: Bool -> StateT InterActiveState IO ()
@@ -118,9 +121,9 @@ interface = do setTitle "HackCell: the Spreadsheet program in Haskell"
                    case fn of
                      "" -> do refresh; putStrLnS "The load argument needs a [file]\
                               \ argument"; mainProgram False
-                     ' ':xs -> loadfile xs
+                     ' ':xs -> do loadfile xs; mainProgram False
                      xs  -> do unknownArg ('l':xs); mainProgram False
-         'n' -> newFile
+         'n' -> do newFile; mainProgram False
          'S' -> do
             afn <- liftIO getLine
             case afn of
@@ -164,113 +167,110 @@ interface = do setTitle "HackCell: the Spreadsheet program in Haskell"
          '\n' -> do when refr refresh; mainProgram False
          xs   -> do unknownArg [xs]; mainProgram False
 
-    unknownArg :: String -> StateT InterActiveState IO ()
-    unknownArg s = do
-      refresh
-      putStrLnS ("Unknown argument '" ++ s
-        ++ "'. (Press h for the commands) \n")
+unknownArg :: String -> StateT InterActiveState IO ()
+unknownArg s = do
+  refresh
+  putStrLnS ("Unknown argument '" ++ s
+    ++ "'. (Press h for the commands) \n")
 
-    insertE :: Expression' -> StateT InterActiveState IO ()
-    insertE e = do
-      s <- get
-      let news = set (fromJust (hstate s)) (current s) e
-      let (_, runnews) = runField (current s) news
-      let runnews' = evalAll runnews
-      put (s {hstate = Just runnews'})
-      refresh
+insertE :: Expression' -> StateT InterActiveState IO ()
+insertE e = do
+  s <- get
+  let news = set (fromJust (hstate s)) (current s) e
+  let (_, runnews) = runField (current s) news
+  let runnews' = evalAll runnews
+  put (s {hstate = Just runnews'})
+  refresh
 
-    newFile :: StateT InterActiveState IO ()
-    newFile = do
-      let sprdsht = Spreadsheet (M.fromList [])
-      s <- get
-      let newSH = evalAll $ createHackcel sprdsht
-      let fileloc = "untitled"
-      put (s {hstate = Just newSH, file = Just fileloc })
-      liftIO $ setTitle ("HackCell: the Spreadsheet program in Haskell: "
-         ++ fileloc)
-      refresh
-      putStrLnS $ "Openend a new file"
-      mainProgram False
+newFile :: StateT InterActiveState IO ()
+newFile = do
+  let sprdsht = Spreadsheet (M.fromList [])
+  s <- get
+  let newSH = evalAll $ createHackcell sprdsht
+  let fileloc = "untitled"
+  put (s {hstate = Just newSH, file = Just fileloc })
+  liftIO $ setTitle ("HackCell: the Spreadsheet program in Haskell: "
+     ++ fileloc)
+  refresh
+  putStrLnS "Openend a new file"
 
-    loadfile :: String -> StateT InterActiveState IO ()
-    loadfile fileloc = do
-      t <- liftIO (loader fileloc)
-      case t of
-        Just contents -> do
-          let (lst, noErrors) = parseFile contents
-          if noErrors then do
-              let sprdsht = Spreadsheet (M.fromList lst)
-              s <- get
-              let newSH = evalAll $ createHackcel sprdsht
-              put (s {hstate = Just newSH, file = Just fileloc })
-              liftIO $ setTitle ("HackCell: the Spreadsheet program in Haskell: "
-                 ++ fileloc)
-              refresh
-              putStrLnS $ "Opened file: " ++ fileloc
-              mainProgram False
-            else do
-              refresh
-              putStrLnS "File contained errors, couldn't load it."
-              mainProgram False
-        Nothing -> mainProgram False
+loadfile :: String -> StateT InterActiveState IO ()
+loadfile fileloc = do
+  t <- liftIO (loader fileloc)
+  case t of
+    Just contents -> do
+      let (lst, noErrors) = parseFile contents
+      if noErrors then do
+          let sprdsht = Spreadsheet (M.fromList lst)
+          s <- get
+          let newSH = evalAll $ createHackcell sprdsht
+          put (s {hstate = Just newSH, file = Just fileloc })
+          liftIO $ setTitle ("HackCell: the Spreadsheet program in Haskell: "
+             ++ fileloc)
+          refresh
+          putStrLnS $ "Opened file: " ++ fileloc
+        else do
+          refresh
+          putStrLnS "File contained errors, couldn't load it."
+    Nothing -> return ()
 
-    loader :: String -> IO (Maybe String)
-    loader fileloc = handle
-      (\(e :: IOException) -> do liftIO (print e); return Nothing)
-      (do h <- openFile fileloc ReadMode
-          contents <- liftIO $ hGetContents h
-          return (Just contents))
+loader :: String -> IO (Maybe String)
+loader fileloc = handle
+  (\(e :: IOException) -> do liftIO (print e); return Nothing)
+  (do h <- openFile fileloc ReadMode
+      contents <- liftIO $ hGetContents h
+      return (Just contents))
 
-    refresh :: StateT InterActiveState IO ()
-    refresh = do liftIO clearScreen
-                 s <- get
-                 case hstate s of
-                   Nothing -> return ()
-                   Just hstate -> putStrLnS $ printNumberTable s
+refresh :: StateT InterActiveState IO ()
+refresh = do liftIO clearScreen
+             s <- get
+             case hstate s of
+               Nothing -> return ()
+               Just hstate -> putStrLnS $ printNumberTable s
 
-    help :: StateT InterActiveState IO ()
-    help = putStrLnS
-          "Welcome to HackCell 2D, the console spreadsheet program for two dimensional spreadsheets. \n\
-          \Helper for the HackCell 2D program.\n\
-          \Commands: 'h' for this helper\n\
-          \          'l file' to load a file \n\
-          \          'n' for a new file\n\
-          \          'q' to quit"
+help :: StateT InterActiveState IO ()
+help = putStrLnS
+      "Welcome to HackCell 2D, the console spreadsheet program for two dimensional spreadsheets. \n\
+      \Helper for the HackCell 2D program.\n\
+      \Commands: 'h' for this helper\n\
+      \          'l file' to load a file \n\
+      \          'n' for a new file\n\
+      \          'q' to quit"
 
-    helpMain :: StateT InterActiveState IO ()
-    helpMain = putStrLnS
-          "Welcome to HackCell 2D, the console spreadsheet program for two dimensional spreadsheets. \n\
-          \Helper for the HackCell 2D program.\n\
-          \Commands: 'h' for this helper\n\
-          \          'l [file]' to load a file\n\
-          \          'S' to save the current spreadsheet \n\
-          \          'SA [file] to save the file to the given location \n \n\
-          \          'w' to move up\n\
-          \          's' to move down\n\
-          \          'a' to move left\n\
-          \          'd' to move right\n\
-          \          'z' to switch between viewing results and expressions\n\
-          \          'i [expression]' to insert an expression at the current position\n\n\
-          \          'q' to quit"
+helpMain :: StateT InterActiveState IO ()
+helpMain = putStrLnS
+      "Welcome to HackCell 2D, the console spreadsheet program for two dimensional spreadsheets. \n\
+      \Helper for the HackCell 2D program.\n\
+      \Commands: 'h' for this helper\n\
+      \          'l [file]' to load a file\n\
+      \          'S' to save the current spreadsheet \n\
+      \          'SA [file] to save the file to the given location \n \n\
+      \          'w' to move up\n\
+      \          's' to move down\n\
+      \          'a' to move left\n\
+      \          'd' to move right\n\
+      \          'z' to switch between viewing results and expressions\n\
+      \          'i [expression]' to insert an expression at the current position\n\n\
+      \          'q' to quit"
 
-    putStrLnS :: String -> StateT InterActiveState IO ()
-    putStrLnS = liftIO.putStrLn
+putStrLnS :: String -> StateT InterActiveState IO ()
+putStrLnS = liftIO.putStrLn
 
-    moveField :: (Int, Int) -> StateT InterActiveState IO ()
-    moveField (x, y) = do  s <- get
-                           let FieldInt (xc, yc) = current s
-                           let FieldInt (xv, yv) = topLeftPrint s
-                           let (newx, newy) = (xc + x, yc + y)
-                           let newxv
-                                | newx < xv = newx
-                                | newx > xv + 9 = newx - 9
-                                | otherwise     = xv
-                           -- = if newx < xv then newx else
-                           --      (if newx > xv + 9 then newx - 9 else xv)
-                           let newyv
-                                | newy < yv = newy
-                                | newy > yv + 9 = newy - 9
-                                | otherwise     = yv
-                           let news = s {current = FieldInt (newx, newy)
-                                        , topLeftPrint = FieldInt (newxv, newyv)}
-                           put news
+moveField :: (Int, Int) -> StateT InterActiveState IO ()
+moveField (x, y) = do  s <- get
+                       let Field (xc, yc) = current s
+                       let Field (xv, yv) = topLeftPrint s
+                       let (newx, newy) = (xc + x, yc + y)
+                       let newxv
+                            | newx < xv = newx
+                            | newx > xv + 9 = newx - 9
+                            | otherwise     = xv
+                       -- = if newx < xv then newx else
+                       --      (if newx > xv + 9 then newx - 9 else xv)
+                       let newyv
+                            | newy < yv = newy
+                            | newy > yv + 9 = newy - 9
+                            | otherwise     = yv
+                       let news = s {current = Field (newx, newy)
+                                    , topLeftPrint = Field (newxv, newyv)}
+                       put news
