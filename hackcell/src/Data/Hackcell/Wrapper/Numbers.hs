@@ -79,27 +79,27 @@ valueDouble :: Double -> Expression field Value NumberError Fns
 valueDouble = ExprLit . ValDouble
 
 -- | Creates a Double from a Value
-fromValueDouble :: Value -> Double
-fromValueDouble (ValDouble x)   = x
-fromValueDouble _               = error "Value is not a Double"
+fromValueDouble :: Value -> Eval field Value NumberError Fns Double
+fromValueDouble (ValDouble x)   = return x
+fromValueDouble _               = tError ErrorInvalidType
 
 -- | Creates a Value from an Int
 valueInt :: Int -> Expression field Value NumberError Fns
 valueInt = ExprLit . ValInt
 
 -- | Creates an Int from a  Value
-fromValueInt :: Value -> Int
-fromValueInt (ValInt x) = x
-fromValueInt _          = error "Value is not an Int"
+fromValueInt :: Value -> Eval field Value NumberError Fns Int
+fromValueInt (ValInt x) = return x
+fromValueInt _          = tError ErrorInvalidType
 
 -- | Creates a Value from a Bool
 valueBool :: Bool -> Expression field Value NumberError Fns
 valueBool = ExprLit . ValBool
 
 -- | Creates a Bool from a Value
-fromValueBool :: Value -> Bool
-fromValueBool (ValBool x) = x
-fromValueBool _          = error "Value is not a Boolean"
+fromValueBool :: Value -> Eval field Value NumberError Fns Bool
+fromValueBool (ValBool x) = return x
+fromValueBool _          = tError ErrorInvalidType
 
 intOpHandler :: (Int -> Int -> Eval field Value NumberError Fns Int) -> [Value] -> Eval field Value NumberError Fns Value
 intOpHandler op [ValInt x, ValInt y] = fmap ValInt (op x y)

@@ -8,7 +8,7 @@ import Test.Tasty.QuickCheck
 import Data.Hackcell.Core
 import Data.Hackcell.Wrapper.DSL
 import Data.Hackcell.Wrapper.NumberList
-import Data.Hackcell.Wrapper.Numbers
+import Data.Hackcell.Wrapper.Numbers hiding (fromValueInt, fromValueBool, fromValueDouble)
 
 import Data.Map.Strict
 
@@ -28,6 +28,18 @@ numberListProperties = testGroup "Number List Properties" [
         gtIntProperty,
         geIntProperty
     ]
+
+fromValueInt :: Value -> Int
+fromValueInt (ValInt x) = x
+fromValueInt _          = error "Value is not an Int"
+
+fromValueDouble :: Value -> Double
+fromValueDouble (ValDouble x)   = x
+fromValueDouble _               = error "Value is not a Double"
+
+fromValueBool :: Value -> Bool
+fromValueBool (ValBool x) = x
+fromValueBool _          = error "Value is not a Boolean"
 
 fromRight' :: Either a b -> b
 fromRight' (Right x) = x
