@@ -148,11 +148,17 @@ parseFile str = (file, null errors)
   where
     (file, errors) = parse ((,) <$> pFile <*> pEnd) $ createStr (LineCol 0 0) str
 
--- pFE :: Parser (Field, Expression')
--- pFE = \x y -> (y,x) <$> pExpression <* pToken "@" <*> pField
---
--- parseFE :: String -> Maybe (Field, Expression')
--- parseFE str | null errors = Just fe
---             | otherwise = Nothing
---   where
---     (fe, errors) = parse ((,) <$> pFE <*> pEnd) $ createStr (LineCol 0 0) str
+pFE :: Parser (Field, Expression')
+pFE = flip (,) <$> pExpression <* pToken "@" <*> pField
+
+parseFE :: String -> Maybe (Field, Expression')
+parseFE str | null errors = Just fe
+            | otherwise = Nothing
+  where
+    (fe, errors) = parse ((,) <$> pFE <*> pEnd) $ createStr (LineCol 0 0) str
+
+parseField :: String -> Maybe Field
+parseField str | null errors = Just fe
+            | otherwise = Nothing
+  where
+    (fe, errors) = parse ((,) <$> pField <*> pEnd) $ createStr (LineCol 0 0) str
