@@ -7,6 +7,7 @@ module Data.Hackcell.Wrapper.NumberTable
     ,   fieldExpr
     ,   fieldParam
     ,   listToSpreadSheet
+    ,   columntoNumber
     ,   Expression'
     )
 where
@@ -44,6 +45,7 @@ fieldParam = PExpr . fieldExpr
 instance Show Field where
     show (Field (a,b)) = columntoNumber a ++ show b
 
+-- | Creates the number name of column
 columntoNumber :: Int -> String
 columntoNumber x | x < 0 = '-' : helper (-x)
                  | x == 0 = "o"
