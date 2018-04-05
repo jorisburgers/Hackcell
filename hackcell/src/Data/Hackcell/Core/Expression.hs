@@ -1,6 +1,6 @@
 {-# language MultiParamTypeClasses, FlexibleContexts, GeneralizedNewtypeDeriving, FunctionalDependencies #-}
 
-module Data.Hackcel.Core.Expression (Parameter(..), HackcelError(..), Expression(..)) where
+module Data.Hackcell.Core.Expression (Parameter(..), HackcellError(..), Expression(..)) where
 
 import Data.List (intercalate)
 
@@ -17,7 +17,7 @@ instance (Show field, Show value, Show error, Show app) => Show (Parameter field
 
 -- | An error type should at least provide the error messages
 --   that are member of this type class.
-class HackcelError t field | t -> field where
+class HackcellError t field | t -> field where
   -- | Unknown field error is thrown when an expression
   --   refers to a field that does not exist.
   errorUnknownField :: field -> t

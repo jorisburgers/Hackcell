@@ -1,7 +1,7 @@
 {-# Language TypeSynonymInstances #-}
 {-# Language MultiParamTypeClasses #-}
 -- | Describes a 2-dimensional table for `Numbers`
-module Data.Hackcel.Wrapper.NumberTable
+module Data.Hackcell.Wrapper.NumberTable
     (    Field(..)
     ,   field
     ,   fieldExpr
@@ -11,9 +11,9 @@ module Data.Hackcel.Wrapper.NumberTable
     )
 where
 
-import Data.Hackcel.Core
-import Data.Hackcel.Wrapper.DSL
-import Data.Hackcel.Wrapper.Numbers
+import Data.Hackcell.Core
+import Data.Hackcell.Wrapper.DSL
+import Data.Hackcell.Wrapper.Numbers
 
 import Data.Either
 import qualified Data.Map.Strict as M
@@ -56,7 +56,7 @@ columntoNumber x | x < 0 = '-' : helper (-x)
 
 
 
-instance HackcelError NumberError Field where
+instance HackcellError NumberError Field where
     errorUnknownField field = UnknownFieldError $ "Unknown field error at index " ++ show field
     errorRecursion fields   = RecursionError $ "Circular referencing via " ++ concatMap ((++" -> ") . show) fields ++ " ..."
     errorExpectedValueGotRange = ErrorUnexpectedValue
@@ -66,9 +66,9 @@ instance FieldRange Field where
     getRange (Field (x1, y1)) (Field (x2, y2)) = [Field (x, y)  | x <- [(min x1 x2)..(max x1 x2)]
                                                                 , y <- [(min y1 y2) .. (max y1 y2)]]
 -- | Converts a two dimenonal list to a Spreadsheet.
-listToSpreadSheet :: [[Expression']] -> HackcelState Field Value NumberError Fns
+listToSpreadSheet :: [[Expression']] -> HackcellState Field Value NumberError Fns
 listToSpreadSheet xss   | not (sameLengths xss) = error "multidimensionale array not all the same size"
-                        | otherwise             = createHackcel (Spreadsheet $ M.fromList $ concat $ fields xss 1 1)
+                        | otherwise             = createHackcell (Spreadsheet $ M.fromList $ concat $ fields xss 1 1)
                         where
                             sameLengths :: [[a]] -> Bool
                             sameLengths []  = True

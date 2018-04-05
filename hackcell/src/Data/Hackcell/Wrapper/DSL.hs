@@ -1,6 +1,6 @@
 {-# language TupleSections #-}
 -- | Provide a number of helper functions to easily write Expressions.
-module Data.Hackcel.Wrapper.DSL
+module Data.Hackcell.Wrapper.DSL
     (   (@@)
     ,   getValues
     ,   FieldRange
@@ -11,7 +11,7 @@ module Data.Hackcel.Wrapper.DSL
     )
 where
 
-import Data.Hackcel.Core
+import Data.Hackcell.Core
 import Data.Map.Lazy
 
 -- | Place the given expression in the given field
@@ -19,9 +19,9 @@ import Data.Map.Lazy
 (@@) = flip (,)
 
 -- | Return a list where every `Either error value` corresponds to the given field
-getValues   :: (HackcelError error field, Ord field, Apply field value error app)
-            => [field] -> HackcelState field value error app
-            -> ([Either error value], HackcelState field value error app)
+getValues   :: (HackcellError error field, Ord field, Apply field value error app)
+            => [field] -> HackcellState field value error app
+            -> ([Either error value], HackcellState field value error app)
 getValues []     h = ([], h)
 getValues (x:xs) h = (val : rest, h'')
   where

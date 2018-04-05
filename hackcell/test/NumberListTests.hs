@@ -5,10 +5,10 @@ import Prelude hiding (EQ, LT, GT)
 import Test.Tasty
 import Test.Tasty.QuickCheck
 
-import Data.Hackcel.Core
-import Data.Hackcel.Wrapper.DSL
-import Data.Hackcel.Wrapper.NumberList
-import Data.Hackcel.Wrapper.Numbers
+import Data.Hackcell.Core
+import Data.Hackcell.Wrapper.DSL
+import Data.Hackcell.Wrapper.NumberList
+import Data.Hackcell.Wrapper.Numbers
 
 import Data.Map.Strict
 
@@ -38,8 +38,8 @@ fromLeft' (Left x) = x
 fromLeft' (Right _)  = error "Left expected, got right"
 
 -- Creates a spreadsheet for numbers
-createSpreadSheet :: [(Field, Expression Field Value NumberError Fns)] -> HackcelState Field Value NumberError Fns
-createSpreadSheet exprs = createHackcel $ Spreadsheet $ fromList exprs
+createSpreadSheet :: [(Field, Expression Field Value NumberError Fns)] -> HackcellState Field Value NumberError Fns
+createSpreadSheet exprs = createHackcell $ Spreadsheet $ fromList exprs
 
 -- Test whether a value returns the correct response
 singleValueProperty :: (Eq a) => (Value -> a) -> (a -> Expression Field Value NumberError Fns) -> a -> Int -> Bool
@@ -47,9 +47,9 @@ singleValueProperty unF f x y = (unF valueF) == x
                             where
                                 valueF :: Value
                                 valueF = (fromRight' $ fst result)
-                                result :: (Either NumberError Value, HackcelState Field Value NumberError Fns)
+                                result :: (Either NumberError Value, HackcellState Field Value NumberError Fns)
                                 result = runField (field y) spreadSheet
-                                spreadSheet :: HackcelState Field Value NumberError Fns
+                                spreadSheet :: HackcellState Field Value NumberError Fns
                                 spreadSheet = createSpreadSheet [f x @@ field y]
 
 -- Test the insertion of an Int
@@ -66,9 +66,9 @@ operationProperty operation opName unF f x y z = (unF valueF) == operation x y
                             where
                                 valueF :: Value
                                 valueF = (fromRight' $ fst result)
-                                result :: (Either NumberError Value, HackcelState Field Value NumberError Fns)
+                                result :: (Either NumberError Value, HackcellState Field Value NumberError Fns)
                                 result = runField (field z) spreadSheet
-                                spreadSheet :: HackcelState Field Value NumberError Fns
+                                spreadSheet :: HackcellState Field Value NumberError Fns
                                 spreadSheet = createSpreadSheet [op opName [PExpr $ f x, PExpr $ f y] @@ field z]
 
 -- Tests the different operators
@@ -101,7 +101,7 @@ errorProperty opName errExp f x y z = errGiv == errExp
                             where
                                 errGiv :: NumberError
                                 errGiv = (fromLeft' $ fst result)
-                                result :: (Either NumberError Value, HackcelState Field Value NumberError Fns)
+                                result :: (Either NumberError Value, HackcellState Field Value NumberError Fns)
                                 result = runField (field z) spreadSheet
-                                spreadSheet :: HackcelState Field Value NumberError Fns
+                                spreadSheet :: HackcellState Field Value NumberError Fns
                                 spreadSheet = createSpreadSheet [op opName [PExpr $ f x, PExpr $ f y] @@ field z]
