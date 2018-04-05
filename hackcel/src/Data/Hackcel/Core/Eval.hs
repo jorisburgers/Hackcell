@@ -56,7 +56,7 @@ runField :: (HackcelError error field, Ord field, Apply field value error app)
 runField f hackcel = (x, finalHackcel)
   where
     initial = EvalState hackcel f []
-    (x, EvalState finalHackcel _ _) = runEval (fromFieldResult $ evalExpression [] f) initial
+    (x, EvalState finalHackcel _ _) = runEval (getValue f) initial
 
 -- | Inserts a new field or updates a field in the spreadsheet
 --   Fields that depend on this field will be invalidated.
@@ -72,7 +72,7 @@ set s f e = s {fields = fields''}
       -- Invalidate the dependants of this field
       Just (_, Just (FieldResult _ dependants)) -> foldr (flip invalidate) fields' dependants
       -- New field, or existing field that was not calculated yet
-      Nothing -> fields'
+      _ -> fields'
 
 -- | Invalidates the given field and invalidates the dependants of the field
 invalidate :: (Ord field)

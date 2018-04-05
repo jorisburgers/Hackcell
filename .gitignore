@@ -32,3 +32,4 @@ cabal.project.local
 *.vrb
 !presentation/img/*.pdf
 *.hcl
+presentation/latex
