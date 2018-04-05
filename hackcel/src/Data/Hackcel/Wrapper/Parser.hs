@@ -1,5 +1,5 @@
 {-# language FlexibleContexts, RankNTypes, TupleSections #-}
--- | Parses Expressions and Files for `NumberTable` 	
+-- | Parses Expressions and Files for `NumberTable`
 module Data.Hackcel.Wrapper.Parser(
         parseFile
     ,   parseExpression
@@ -57,7 +57,7 @@ pFieldColumnChar = (\c -> fromJust $ elemIndex c ['A' .. ]) <$> pRange ('A', 'Z'
 pField :: Parser Field
 pField = f <$> pSome pFieldColumnChar <*> pInt
   where
-    f column row = FieldInt (foldl (\x y -> 1 + x * 26 + y) 0 column, row)
+    f column row = Field (foldl (\x y -> 1 + x * 26 + y) 0 column, row)
 
 -- Parses an expression of a left associative infix binary operator
 pOperatorLeft :: Parser Fns -> Parser Expression' -> Parser Expression'
