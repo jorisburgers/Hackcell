@@ -107,7 +107,33 @@
 	
 	\section{Results}
 	%results you have achieved, including examples of use of your library or application.
+	The result that is obtained is a working library for spreadsheets. The core of the library gives a way to store expressions, evaluate them, track dependencies, detect cyclic references and propagate errors. This library can be used by anyone who wants to create a spreadsheet program.
+
+	A wrapper should be written around the core, which specifies what the types of the fields, the values and the errors are. There are a few restrictions on these types, such that we can provide all the needed functionality. Also a data type that conforms to Apply class should be implemented. In this instance the internal working of functions application should be specified. This leads to these custom classes that should be instanced and on top of that an \texttt{Ord} instance for \texttt{field}.
+\begin{minted}{haskell}
+class Apply field value err app where
+  apply :: app -> [Argument field value err app] -> Eval field value err app value
+  
+class HackcellError err field | err -> field where
+  errorUnknownField :: field -> err
+  errorRecursion :: [field] -> err
+  errorExpectedValueGotRange :: err
+  errorExpectedRangeGotValue :: err
+\end{minted}
 	
+	A few standard utilities are provided, like a pretty printer, throwing custom errors in the monad stack, evaluate all fields and a simple command line interface for debugging. For the pretty printer and command line interface \texttt{Show} instances for \texttt{field}, \texttt{value}, \texttt{err}, \texttt{app} are needed. If functions use range arguments, it should be decided in the wrapper how to handle them. For example make a one dimensional list from a range, a multi dimensional list, etc.
+	
+	On top of this library, we build a wrapper that supports integers, doubles and bools. The field is not yet specified for this, so it can be used in multiple instances. Function applications supports basic operators like \texttt{+}, \texttt{\&\&}, \texttt{<} and if-then-else (\texttt{e1 ? e2 : e3}) constructs.
+	
+	Two different examples for fields are made, a one dimensional one and a two dimensional one:
+\begin{minted}{haskell}
+-- One dimensional
+data Field = Field Int
+-- Two dimensional
+data Field = Field (Int, Int)
+\end{minted}
+	
+	For the two dimensional one a command line interface and parser is provided. The command line interface is a simplistic version of how this would work for the end user. You can open it by loading the \texttt{InterfaceTable} module. Then use the \texttt{interface} function and press the 'h' key to see the help. The user can load and save spreadsheets, create new spreadsheets, insert expressions on a field, view a 10 by 10 overview of the spreadsheet, move through the spreadsheet and switch between seeing expressions and results. 
 	\section{Reflection}
 	During the project we have implemented almost all features from the project proposal, except for SQL-like query functions. Those can however be implemented on top of the library. The schedule was realistic.
 \\\\	
